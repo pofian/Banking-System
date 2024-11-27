@@ -1,74 +1,45 @@
-# Homeworks
+# Project Assignment POO  - J. POO Morgan - Phase One
 
-This repository contains (and is updated each university year):
+![](https://s.yimg.com/ny/api/res/1.2/aN0SfZTtLF5hLNO0wIN3gg--/YXBwaWQ9aGlnaGxhbmRlcjt3PTcwNTtoPTQyNztjZj13ZWJw/https://o.aolcdn.com/hss/storage/midas/b23d8b7f62a50a7b79152996890aa052/204855412/fit.gif)
 
- * content of each homework with detailed explanations of the assignments and automated checkers
- * media, such as photos or diagrams, that are used to better portrait examples as well as sources (where need-be - e.g. the UML diagrams can be exported to XML from [draw.io](https://www.draw.io/))
- * skeletons for homeworks which require a starting point
+#### Assignment Link: [https://ocw.cs.pub.ro/courses/poo-ca-cd/teme/2024/proiect-e1](https://ocw.cs.pub.ro/courses/poo-ca-cd/teme/2024/proiect-e1)
 
-## Repository folder structure
+## Skel Structure
 
-The structure for a current homework is as follows:
-```
-teme
-|
-|	--->	homework*X*-name  [1]
-|		|	--->	checker  [2]
-|		|	--->	media [3]
-|		|	--->	skel  [4]
-|		|		|	---> image-source [5]
-|		|	homework*X*-name  [6]
-|	--->	...
-|	--->	...
-```
+* src/
+    * checker/ - checker files
+    * fileio/ - contains classes used to read data from the json files
+    * main/
+        * Main - the Main class runs the checker on your implementation. Add the entry point to your implementation in it. Run Main to test your implementation from the IDE or from command line.
+        * Test - run the main method from Test class with the name of the input file from the command line and the result will be written
+          to the out.txt file. Thus, you can compare this result with ref.
+* input/ - contains the tests in JSON format
+* ref/ - contains all reference output for the tests in JSON format
 
-The structure for an old or deprecated homework is as follows:
-```
-old
-|	--->	university_year [7]
-|		|	--->	old_homework*X*-name  [1]
-|		|		|	--->	checker  [2]
-|		|		|	--->	media	[3]
-|		|		|	--->	skel	[4]
-|		|		|		|	---> image-source [5]
-|		|		|	old_homework*X*-name  [6]
-|		|	--->	...
-|		|	--->	...
-|	--->	...
-|	--->	...
-```
+## Tests
 
-* **[1]** - folder with the homework name and contents (where *X* is the homework number)
-* **[2]** - folder with the checker [if need-be]
-* **[3]** - folder with images and diagrams [if need-be]
-* **[4]** - folder with the skeleton code [if need-be]
-* **[5]** - folder with sources of the images/diagrams [if need-be]
-* **[6]** - file with homework details and exercises - docuwiki code (**must** be the same as the folder name)
-* **[7]** - folder with the university year in which the homework was due
+Tests Basic 1 - 8: Infrastructure \
+Tests Functional 9 - 17: Advanced \
+Tests Flow 18 - 20: Large Input
 
-## Contributing
-
-If you are interested in fixing issues, detailing laboratory content or just want to lend a helping hand,
-please see the document [How to Contribute](CONTRIBUTING.md), which covers the following:
-
-* [Coding Guidelines](CONTRIBUTING.md#coding-guidelines)
-* [Submitting pull requests](CONTRIBUTING.md#pull-requests)
-
-This organization has adopted the [Ethics regulation](http://wiki.cs.pub.ro/_media/studenti/licenta/regulament-comisie-de-etica-upb.pdf) and the [Code of Conduct for Students from the Faculty of Automation and Computers](http://wiki.cs.pub.ro/_media/studenti/licenta/cod-conduita-studenti-acs-.pdf). Failure to comply with or violate the rules set out in any of these documents will result in the sanctions imposed by UPB's internal regulations, such as reprimand, written warning, or expulsion from the University POLITEHNICA of Bucharest.
-
-## Feedback
-
-* Ask a question on [the Moodle instance of our university](http://cs.curs.pub.ro/).
-* Request a new feature on [GitHub](CONTRIBUTING.md).
-* File a bug in [GitHub Issues](https://github.com/oop-pub/teme/issues).
-
-## Related repositories
-
-* [Laboratories](https://github.com/oop-pub/laboratoare) - content related to laboratories
-* [Wiki](https://github.com/oop-pub/wiki) - content from the [docuwiki instance](http://elf.cs.pub.ro/poo/)
-
-## License
-
-Licensed under the [MIT](LICENSE) License.
-
+1. test01_create - 2p
+2. test02_delete - 2p
+3. test03_one_time_card - 2p
+4. test04_funds - 2p
+5. test05_money_flow - 2p
+6. test06_non_existing - 2p
+7. test07_send_money_part1 - 3p
+8. test08_send_money_part2 - 3p
+9. test09_print_transactions - 3p
+10. test10_errors - 3p
+11. test11_card_status - 5p
+12. test12_continuous_payments - 5p
+13. test13_savings_account - 5p
+14. test14_split_payments - 5p
+15. test15_every_payment - 5p
+16. test16_report - 5p
+17. test17_spendings_report - 5p
+18. test18_large_input_1 - 7p
+19. test19_large_input_2 - 7p
+20. test19_large_input_3 - 7p
 
