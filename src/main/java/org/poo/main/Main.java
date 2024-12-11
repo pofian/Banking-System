@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.poo.checker.Checker;
 import org.poo.checker.CheckerConstants;
+import org.poo.fileio.CommandInput;
 import org.poo.fileio.ObjectInput;
 
 import java.io.File;
@@ -74,6 +75,12 @@ public final class Main {
 
         ArrayNode output = objectMapper.createArrayNode();
 
+        Output myOutput = new Output(output);
+        Bank bank = new Bank(inputData, myOutput);
+
+        for (CommandInput commandInput : inputData.getCommands()) {
+            bank.runCommand(commandInput);
+        }
         /*
          * TODO Implement your function here
          *
