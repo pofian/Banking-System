@@ -1,9 +1,13 @@
 package org.poo.main;
 
+import lombok.Getter;
 import org.poo.fileio.CommandInput;
 import org.poo.fileio.ObjectInput;
 import org.poo.fileio.UserInput;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 import static org.poo.utils.Utils.resetRandom;
 
@@ -51,7 +55,7 @@ final public class Bank {
                     if (account.getBalance() <= account.getMinBalance()) {
                         card.setFrozen(true);
                         card.setStatus("frozen");
-                        user.addTransaction(new FreezeCardTransaction(commandInput.getTimestamp()));
+                        account.addTransaction(new FreezeCardTransaction(commandInput.getTimestamp()));
                     }
                     return;
                 }
@@ -68,12 +72,66 @@ final public class Bank {
         }
         String cardNumber = commandInput.getCardNumber();
         Account account = user.getAccountThatHasCard(cardNumber);
-        if (account != null) {
-            account.deleteCard(cardNumber);
-            user.addTransaction(new CardDestroyedTransaction(commandInput, account.getIBAN()));
+        if (account == null) {
+            System.out.print("Card doesn't exist");
             return;
         }
-        System.out.print("Card doesn't exist");
+        account.deleteCard(cardNumber);
+        account.addTransaction(new CardDestroyedTransaction(commandInput, account.getIBAN()));
+    }
+
+    @Getter
+    static class Payment {
+        Account account;
+        double amount;
+        public Payment(Account account, double amount) {
+            this.account = account;
+            this.amount = amount;
+        }
+    }
+
+    private void splitPayment(CommandInput commandInput) {
+        ArrayList<Payment> payments = new ArrayList<>();
+        double amount = commandInput.getAmount() / commandInput.getAccounts().size();
+        boolean canPay = true;
+        String failer = "";
+        for (String IBAN : commandInput.getAccounts()) {
+            Account account = getAccountFromIBAN(IBAN);
+            if (account != null) {
+                double paymentAmount = pay(account, amount, commandInput.getCurrency());
+//                if (paymentAmount < 0) {
+//                    throw new RuntimeException("Couldn't convert");
+//                }
+                if (paymentAmount >= 0 && account.getBalance() >= paymentAmount) {
+                    payments.add(new Payment(account, paymentAmount));
+                } else {
+                    canPay = false;
+                    failer = IBAN;
+                }
+            }
+        }
+        if (canPay) {
+            for (Payment payment : payments) {
+                payment.getAccount().subBalance(payment.getAmount());
+                payment.getAccount().addTransaction(new SplitPaymentTransaction(commandInput, amount));
+            }
+        } else {
+            for (Payment payment : payments) {
+                payment.getAccount().addTransaction(new SplitPaymentFailedTransaction(commandInput, amount, failer));
+            }
+        }
+    }
+
+    private double pay(Account account, double amount, String currency) {
+        double s = currencyExchanger.convert(currency, account.getCurrency());
+        if (s < 0) {
+            return -2;
+        }
+        double paymentAmount = amount * s;
+        if (account.getBalance() < paymentAmount) {
+            return -1;
+        }
+        return paymentAmount;
     }
 
     public void runCommand(CommandInput commandInput) {
@@ -84,30 +142,23 @@ final public class Bank {
             case "printTransactions" -> {
                 User user = getUserFromEmail(commandInput.getEmail());
                 if (user != null) {
-                    output.printTransactions(User.copyTransactions(user.getTransactions()), commandInput.getTimestamp());
+                    output.printTransactions(user.getTransactionsCopy(), commandInput.getTimestamp());
                 }
             }
 
             case "addAccount" -> {
                 User user = getUserFromEmail(commandInput.getEmail());
                 if (user != null) {
-                    user.addAccount(new Account(commandInput));
-                    user.addTransaction(new CreateAccountTransaction(commandInput.getTimestamp()));
+                    Account account = new Account(commandInput);
+                    user.addAccount(account);
+                    account.addTransaction(new CreateAccountTransaction(commandInput.getTimestamp()));
                 }
             }
 
-            case "createCard", "createOneTimeCard" -> {
-                User user = getUserFromEmail(commandInput.getEmail());
-                if (user != null) {
-                    Card card = new Card();
-                    user.addCard(commandInput, card);
-                    user.addTransaction(new CreateCardTransaction(commandInput, card.getCardNumber()));
-                }
-            }
+            case "createCard" -> createCard(commandInput, false);
+            case "createOneTimeCard" -> createCard(commandInput, true);
 
-            case "deleteCard" -> {
-                deleteCard(commandInput);
-            }
+            case "deleteCard" -> deleteCard(commandInput);
 
             case "addFunds" -> {
                 Account account = getAccountFromIBAN(commandInput.getAccount());
@@ -134,24 +185,41 @@ final public class Bank {
                     return;
                 }
                 if (card.isFrozen()) {
-                    user.addTransaction(new CardFrozenTransaction(commandInput.getTimestamp()));
+                    account.addTransaction(new CardFrozenTransaction(commandInput.getTimestamp()));
                     return;
                 }
                 double paymentAmount = pay(account, amount, commandInput.getCurrency());
                 if (paymentAmount > 0) {
-                    user.addTransaction(new CardTransaction(commandInput, paymentAmount));
+                    account.subBalance(paymentAmount);
+                    account.addTransaction(new CardTransaction(commandInput, paymentAmount));
+                    if (card.isOTP()) {
+                        account.deleteCard(cardNumber);
+                        account.addCard(new Card(true));
+//                        account.;
+                    }
                 } else if (paymentAmount == -1) {
-                    user.addTransaction(new InsufficientFoundsTransaction(commandInput.getTimestamp()));
+                    account.addTransaction(new InsufficientFoundsTransaction(commandInput.getTimestamp()));
                 }
             }
 
             case "deleteAccount" -> {
                 User user = getUserFromEmail(commandInput.getEmail());
-                if (user != null) {
-                    int err = user.deleteAccount(commandInput);
-                    output.deleteAccount(commandInput.getTimestamp(), err);
+                if (user == null) {
+                    return;
                 }
-            }
+                Account account = getAccountFromIBAN(commandInput.getAccount());
+                if (account == null) {
+                    return;
+                }
+                int err = 0;
+                if (account.getBalance() != 0) {
+                    err = 1;
+                    account.addTransaction(new FundsRemainingTransaction(commandInput.getTimestamp()));
+                } else {
+                    user.deleteAccount(account);
+                }
+                output.deleteAccount(commandInput.getTimestamp(), err);
+        }
 
             case "sendMoney" -> {
                 User user = getUserFromEmail(commandInput.getEmail());
@@ -166,40 +234,97 @@ final public class Bank {
                 if (accountReceiver == null) {
                     return;
                 }
-                switch (accountSender.sendMoneyToAccount(accountReceiver, currencyExchanger, commandInput.getAmount())) {
-                    case 0 -> user.addTransaction(new SendMoneyTransaction(commandInput,
-                                accountSender.getCurrency(), true));
-                    case 1 -> user.addTransaction(new InsufficientFoundsTransaction(commandInput.getTimestamp()));
-                    case 2 -> user.addTransaction(new MinBalanceSetTransaction(commandInput.getTimestamp()));
+                double convertedAmount = accountSender.sendMoneyToAccount
+                        (accountReceiver, currencyExchanger, commandInput.getAmount());
+                if (convertedAmount > 0) {
+                    accountSender.addTransaction(new SendMoneyTransaction(commandInput,
+                            commandInput.getAmount() ,accountSender.getCurrency(), true));
+                    accountReceiver.addTransaction(new SendMoneyTransaction(commandInput,
+                            convertedAmount ,accountReceiver.getCurrency(), false));
+                } else if (convertedAmount == -1) {
+                    accountSender.addTransaction(new InsufficientFoundsTransaction(commandInput.getTimestamp()));
+                } else if (convertedAmount == -2) {
+                    accountSender.addTransaction(new MinBalanceSetTransaction(commandInput.getTimestamp()));
                 }
             }
 
             case "setMinBalance" -> {
                 Account account = getAccountFromIBAN(commandInput.getAccount());
-                if (account == null) {
-                    return;
+                if (account != null) {
+                    account.setMinBalance(commandInput.getMinBalance());
                 }
-                account.setMinBalance(commandInput.getMinBalance());
             }
 
             case "checkCardStatus" -> {
                 checkCardStatus(commandInput);
             }
 
+            case "splitPayment" -> {
+                splitPayment(commandInput);
+            }
+
+            case "report" -> {
+                report(commandInput, false);
+            }
+
+            case "spendingsReport" -> report(commandInput, true);
+
+            case "changeInterestRate" -> {
+                Account account = getAccountFromIBAN(commandInput.getAccount());
+                if (account != null && !account.isSavingsAccount()) {
+                    output.changeInterestRate(commandInput.getTimestamp());
+                }
+            }
+
+            case "addInterest" -> output.addInterest(commandInput.getTimestamp());
+
             default -> {}
         }
     }
 
-    private double pay(Account account, double amount, String currency) {
-        double s = currencyExchanger.convert(currency, account.getCurrency());
-        if (s < 0) {
-            return -2;
+    public void createCard(CommandInput commandInput, boolean isOTP) {
+        User user = getUserFromEmail(commandInput.getEmail());
+        if (user != null) {
+            Card card = new Card(isOTP);
+            Account account = user.getAccountFromIBAN(commandInput.getAccount());
+            account.addCard(card);
+            account.addTransaction(new CreateCardTransaction(commandInput, card.getCardNumber()));
         }
-        double paymentAmount = amount * s;
-        if (account.getBalance() < paymentAmount) {
-            return -1;
+    }
+
+    @Getter
+    public class Commerciant {
+        String commerciant;
+        double total;
+
+        public Commerciant(String commerciant, double amount) {
+            this.commerciant = commerciant;
+            this.total = amount;
         }
-        account.subBalance(paymentAmount);
-        return paymentAmount;
+    }
+
+    private void report(CommandInput commandInput, boolean isSpendingReport) {
+        Account account = getAccountFromIBAN(commandInput.getAccount());
+        if (account == null) {
+            output.accountNotFound(commandInput.getTimestamp(), isSpendingReport);
+            return;
+        }
+        ArrayList<Transaction> transactions = new ArrayList<>();
+        List<Commerciant> commerciants = new ArrayList<>();
+        int t1 = commandInput.getStartTimestamp();
+        int t2 = commandInput.getEndTimestamp();
+        for (Transaction transaction : account.getTransactions()) {
+            int tmp = transaction.getTimestamp();
+            if (t1 <= tmp && tmp <= t2 ) {
+                if (!isSpendingReport || transaction instanceof CardTransaction) {
+                    transactions.add(transaction);
+                }
+                if (isSpendingReport && transaction instanceof CardTransaction cardTransaction) {
+                    commerciants.add(new Commerciant(cardTransaction.getCommerciant(), cardTransaction.getAmount()));
+                }
+            }
+        }
+        Collections.sort(commerciants, Comparator.comparing(Commerciant::getCommerciant));
+        output.report(transactions, account, commerciants, isSpendingReport, commandInput.getTimestamp());
     }
 }

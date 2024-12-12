@@ -22,6 +22,8 @@ public class Account {
     private final String currency;
     private final String type;
     private final ArrayList<Card> cards = new ArrayList<>();
+    @JsonIgnore
+    private final ArrayList<Transaction> transactions = new ArrayList<>();
 
     public Account(final CommandInput commandInput) {
         IBAN = generateIBAN();
@@ -53,14 +55,17 @@ public class Account {
         balance += amount;
     }
 
-    public Card deleteCard(final String cardNumber) {
+    public void addTransaction(final Transaction transaction) {
+        transactions.add(transaction);
+    }
+
+    public void deleteCard(final String cardNumber) {
         for (Card card : cards) {
             if (card.getCardNumber().equals(cardNumber)) {
                 cards.remove(card);
-                return card;
+                return;
             }
         }
-        return null;
     }
 
     public Card getCard(final String cardNumber) {
@@ -76,24 +81,30 @@ public class Account {
         balance -= amount;
     }
 
-    public int sendMoneyToAccount(Account accountReceiver, CurrencyExchanger currencyExchanger,
+    public double sendMoneyToAccount(Account accountReceiver, CurrencyExchanger currencyExchanger,
                           double amount) {
         if (amount > balance) {
-            return 1;
+            return -1;
         }
 
         if (balance - amount  < minBalance) {
-            return 2;
+            return -2;
         }
 
         double rate = currencyExchanger.convert(this.getCurrency(), accountReceiver.getCurrency());
         if (rate < 0) {
-            return 3;
+            return -3;
         }
 
         subBalance(amount);
-        accountReceiver.addBalance(rate * amount);
-        return 0;
+        double convertedAmount = rate * amount;
+        accountReceiver.addBalance(convertedAmount);
+        return convertedAmount;
+    }
+
+    @JsonIgnore
+    public boolean isSavingsAccount() {
+        return Objects.equals(type, "savings");
     }
 
 }
