@@ -13,6 +13,7 @@ public class Card {
     private String status;
     @JsonIgnore @Setter
     private boolean frozen = false, isOTP;
+
     public Card(final boolean isOTP) {
         this.cardNumber = generateCardNumber();
         this.status = "active";

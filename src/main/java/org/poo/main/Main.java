@@ -40,7 +40,6 @@ public final class Main {
     public static void main(final String[] args) throws IOException {
         File directory = new File(CheckerConstants.TESTS_PATH);
         Path path = Paths.get(CheckerConstants.RESULT_PATH);
-
         if (Files.exists(path)) {
             File resultFile = new File(String.valueOf(path));
             for (File file : Objects.requireNonNull(resultFile.listFiles())) {
@@ -78,7 +77,6 @@ public final class Main {
         ObjectInput inputData = objectMapper.readValue(file, ObjectInput.class);
 
         ArrayNode output = objectMapper.createArrayNode();
-
         resetRandom();
         Bank bank = new Bank(inputData);
         Output newOutput = new Output(output);

@@ -18,14 +18,9 @@ class Graph {
     }
 
     public void addEdge(Integer a, Integer b, double rate) {
+        assert rate > 0 : "Watch out for scammers!";
         values[a][b] = rate;
         values[b][a] = 1 / rate;
-    }
-
-    public void resetUsed() {
-        for (int i = 0; i < nodes; i++) {
-            used[i] = false;
-        }
     }
 
     public double getDistance(final Integer a, final Integer b) {
@@ -41,13 +36,13 @@ class Graph {
                 if (v > 0) {
                     v *= values[a][i];
                     values[a][b] = v;
+                    used[a] = false;
                     return v;
                 }
             }
         }
 
         used[a] = false;
-
         return -1;
     }
 }
@@ -59,7 +54,7 @@ public class CurrencyExchanger {
     public CurrencyExchanger(ExchangeInput[] exchangeRates) {
         int nodes = 0;
         for (ExchangeInput exchange : exchangeRates) {
-            for (String str : new String[]{exchange.getFrom(), exchange.getTo()}) {
+            for (String str : new String[] {exchange.getFrom(), exchange.getTo()}) {
                 if (!map.containsKey(str)) {
                     map.put(str, nodes++);
                 }
@@ -72,9 +67,10 @@ public class CurrencyExchanger {
     }
 
     public double convert(final String from, final String to) {
-        graph.resetUsed();
         double dst = graph.getDistance(map.get(from), map.get(to));
-        assert dst > 0 : "Can't convert";
+        if (dst < 0) {
+            throw new RuntimeException("Cannot convert " + from + " to " + to);
+        }
         return dst;
     }
 }

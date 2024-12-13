@@ -1,19 +1,17 @@
 package org.poo.main.Input;
 
-import lombok.Setter;
 import org.poo.fileio.CommandInput;
 import org.poo.main.*;
-import org.poo.main.BankDatabase.Account;
-import org.poo.main.BankDatabase.Bank;
-import org.poo.main.BankDatabase.Card;
-import org.poo.main.BankDatabase.User;
+import org.poo.main.BankDatabase.*;
 import org.poo.main.Payments.AccountPayment;
 import org.poo.main.Transactions.*;
-import org.poo.main.Transactions.TransactionType;
+import org.poo.main.Transactions.SimpleTransaction.TransactionType;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.ArrayList;
+
+import lombok.Setter;
 
 @Setter
 public class BankInputHandler {
@@ -150,18 +148,18 @@ public class BankInputHandler {
             if (account == null) {
                 continue;
             }
-            AccountPayment accountPayment = new AccountPayment(bank.getCurrencyExchanger()).
+            AccountPayment newPayment = new AccountPayment(bank.getCurrencyExchanger()).
                     initialise(account, null, amount, commandInput.getCurrency());
-            if (accountPayment.validate() < 0 ) {
+            if (newPayment.validate() < 0 ) {
                 return IBAN;
             }
-            accountPayments.add(accountPayment);
+            accountPayments.add(newPayment);
         }
 
         Transaction splitTransaction = new SplitPaymentTransaction(commandInput, amount);
-        for (AccountPayment accountPayment : accountPayments) {
-            accountPayment.pay();
-            accountPayment.getSender().addTransaction(splitTransaction);
+        for (AccountPayment newPayment : accountPayments) {
+            newPayment.pay();
+            newPayment.getSender().addTransaction(splitTransaction);
         }
         return null;
     }
@@ -181,10 +179,12 @@ public class BankInputHandler {
         if (user == null) {
             return;
         }
+
         Account accountSender = user.getAccountFromIBAN(commandInput.getAccount());
         if (accountSender == null) {
             return;
         }
+
         Account accountReceiver = bank.getAccountFromIBAN(commandInput.getReceiver());
         if (accountReceiver == null) {
             return;
@@ -220,17 +220,20 @@ public class BankInputHandler {
         if (user == null) {
             return;
         }
+
         String cardNumber = commandInput.getCardNumber();
         Account account = user.getAccountThatHasCard(cardNumber);
         if (account == null) {
             output.payOnline(commandInput.getTimestamp());
             return;
         }
+
         Card card = account.getCard(cardNumber);
         if (card == null) {
             output.payOnline(commandInput.getTimestamp());
             return;
         }
+
         if (card.isFrozen()) {
             account.addTransaction(new SimpleTransaction(commandInput.getTimestamp(), TransactionType.CardFrozen));
             return;
@@ -256,9 +259,9 @@ public class BankInputHandler {
     public void createCard(CommandInput commandInput, boolean isOTP) {
         User user = bank.getUserFromEmail(commandInput.getEmail());
         if (user == null) {
-            System.out.println("User not found");
             return;
         }
+
         Card card = new Card(isOTP);
         Account account = user.getAccountFromIBAN(commandInput.getAccount());
         account.addCard(card);

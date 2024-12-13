@@ -1,20 +1,26 @@
 package org.poo.main.BankDatabase;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Getter;
 import org.poo.fileio.UserInput;
 import org.poo.main.Transactions.Transaction;
 
 import java.util.Comparator;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Objects;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
 
 @Getter
 public class User {
     private final String firstName, lastName, email;
-    private final List<Account> accounts = new ArrayList<>();
     @JsonIgnore
+    private final Map<String, Account> accounts = new HashMap<>();
+    /// The list is only used for output
+    @JsonProperty("accounts")
+    private final List<Account> accountList = new ArrayList<>();
 
     public User (final UserInput userInput) {
         this.firstName = userInput.getFirstName();
@@ -26,15 +32,49 @@ public class User {
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
         this.email = user.getEmail();
-        for (Account account : user.getAccounts()) {
-            accounts.add(new Account(account));
+        user.getAccountList().stream().
+                filter(user::ownsAccount).
+                forEach(account -> accountList.add(new Account(account)));
+    }
+
+    public void addAccount(final Account account) {
+        accountList.add(account);
+        accounts.put(account.getIBAN(), account);
+    }
+
+    /// I won't delete the account from the accounts List because that would be an O(n) operation
+    /// Instead, when I print I will filter out all accounts that were previously deleted
+    public void deleteAccount(final Account account) {
+        accountList.remove(account);
+    }
+
+    public Account getAccountFromIBAN(final String IBAN) {
+        return accounts.get(IBAN);
+    }
+
+    public boolean ownsAccount(final Account account) {
+        return accounts.containsKey(account.getIBAN());
+    }
+
+    public Account getAccountThatHasCard(String cardNumber) {
+        for (Account account : accounts.values()) {
+            Card card = account.getCard(cardNumber);
+            if (card != null) {
+                return account;
+            }
         }
+        return null;
+    }
+
+    @JsonIgnore
+    public List<Account> getAccounts() {
+        return accounts.values().stream().toList();
     }
 
     @JsonIgnore
     public List<Transaction> getTransactions() {
         List<Transaction> transactions = new ArrayList<>();
-        for (Account account : accounts) {
+        for (Account account : accountList) {
             transactions.addAll(account.getTransactions());
         }
         return transactions;
@@ -43,46 +83,6 @@ public class User {
     @JsonIgnore
     public List<Transaction> getTransactionsCopy() {
         Comparator<Transaction> timestampComparator = Comparator.comparingInt(Transaction::getTimestamp);
-        List<Transaction> transactions = getTransactions();
-        transactions.sort(timestampComparator);
-        return transactions;
-    }
-
-    public Account getAccountFromIBAN(final String iban) {
-        for (Account account : accounts) {
-            if (Objects.equals(account.getIBAN(), iban)) {
-                return account;
-            }
-        }
-        return null;
-    }
-
-
-    public void addAccount(final Account account) {
-        accounts.add(account);
-    }
-
-    public void deleteAccount(final Account account) {
-        accounts.remove(account);
-    }
-
-    public Card getCard(String cardNumber) {
-        for (Account account : accounts) {
-            Card card = account.getCard(cardNumber);
-            if (card != null) {
-                return card;
-            }
-        }
-        return null;
-    }
-
-    public Account getAccountThatHasCard(String cardNumber) {
-        for (Account account : accounts) {
-            Card card = account.getCard(cardNumber);
-            if (card != null) {
-                return account;
-            }
-        }
-        return null;
+        return getTransactions().stream().sorted(timestampComparator).toList();
     }
 }

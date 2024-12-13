@@ -10,11 +10,11 @@ public class SendMoneyTransaction extends Transaction {
     final String amount;
     final String transferType;
 
-    public SendMoneyTransaction(CommandInput commandInput, double paySum, String currency, boolean senderOrReceiver) {
+    public SendMoneyTransaction(CommandInput commandInput, double paySum, String currency, boolean sentOrReceived) {
         super(commandInput.getTimestamp(), commandInput.getDescription());
         senderIBAN = commandInput.getAccount();
         receiverIBAN = commandInput.getReceiver();
         amount = paySum + " " + currency;
-        transferType = senderOrReceiver ? "sent" : "received";
+        transferType = sentOrReceived ? "sent" : "received";
     }
 }
