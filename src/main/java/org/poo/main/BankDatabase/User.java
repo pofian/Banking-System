@@ -31,14 +31,6 @@ public class User {
         }
     }
 
-    public static List<User> copyUsers(List<User> users) {
-        List<User> usersCopy = new ArrayList<>();
-        users.forEach(user -> usersCopy.add(new User(user)));
-        return usersCopy;
-        /// TODO: Modify
-//        return new ArrayList<>(usersCopy);
-    }
-
     @JsonIgnore
     public List<Transaction> getTransactions() {
         List<Transaction> transactions = new ArrayList<>();

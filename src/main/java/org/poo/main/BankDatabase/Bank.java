@@ -38,4 +38,21 @@ public class Bank {
         }
         return null;
     }
+
+    public List<User> usersMemento() {
+        List<User> usersCopy = new ArrayList<>();
+        users.forEach(user -> usersCopy.add(new User(user)));
+        return usersCopy;
+    }
+
+    public Account getAccountThatOwnsCard(String cardNumber) {
+        for (User user : users) {
+            for (Account account : user.getAccounts()) {
+                if (account.getCard(cardNumber) != null) {
+                    return account;
+                }
+            }
+        }
+        return null;
+    }
 }

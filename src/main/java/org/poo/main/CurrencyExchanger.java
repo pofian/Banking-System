@@ -73,6 +73,8 @@ public class CurrencyExchanger {
 
     public double convert(final String from, final String to) {
         graph.resetUsed();
-        return graph.getDistance(map.get(from), map.get(to));
+        double dst = graph.getDistance(map.get(from), map.get(to));
+        assert dst > 0 : "Can't convert";
+        return dst;
     }
 }

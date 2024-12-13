@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import org.poo.fileio.CommandInput;
-import org.poo.main.CurrencyExchanger;
 import org.poo.main.Transactions.Transaction;
 
 import java.util.List;
@@ -82,27 +81,6 @@ public class Account {
 
     public void subBalance(double amount) {
         balance -= amount;
-    }
-
-    public double sendMoneyToAccount(Account accountReceiver, CurrencyExchanger currencyExchanger,
-                          double amount) {
-        if (amount > balance) {
-            return -1;
-        }
-
-        if (balance - amount  < minBalance) {
-            return -2;
-        }
-
-        double rate = currencyExchanger.convert(this.getCurrency(), accountReceiver.getCurrency());
-        if (rate < 0) {
-            return -3;
-        }
-
-        subBalance(amount);
-        double convertedAmount = rate * amount;
-        accountReceiver.addBalance(convertedAmount);
-        return convertedAmount;
     }
 
     @JsonIgnore
