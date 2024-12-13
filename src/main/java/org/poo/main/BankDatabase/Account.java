@@ -1,11 +1,14 @@
-package org.poo.main;
+package org.poo.main.BankDatabase;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import org.poo.fileio.CommandInput;
+import org.poo.main.CurrencyExchanger;
+import org.poo.main.Transactions.Transaction;
 
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -21,9 +24,9 @@ public class Account {
     private double minBalance = 0;
     private final String currency;
     private final String type;
-    private final ArrayList<Card> cards = new ArrayList<>();
+    private final List<Card> cards = new ArrayList<>();
     @JsonIgnore
-    private final ArrayList<Transaction> transactions = new ArrayList<>();
+    private final List<Transaction> transactions = new ArrayList<>();
 
     public Account(final CommandInput commandInput) {
         IBAN = generateIBAN();

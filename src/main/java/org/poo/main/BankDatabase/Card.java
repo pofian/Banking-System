@@ -1,4 +1,4 @@
-package org.poo.main;
+package org.poo.main.BankDatabase;
 
 import static org.poo.utils.Utils.generateCardNumber;
 

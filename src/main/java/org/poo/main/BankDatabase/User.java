@@ -1,16 +1,19 @@
-package org.poo.main;
+package org.poo.main.BankDatabase;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import org.poo.fileio.UserInput;
+import org.poo.main.Transactions.Transaction;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Objects;
 
 @Getter
 public class User {
     private final String firstName, lastName, email;
-    private final ArrayList<Account> accounts = new ArrayList<>();
+    private final List<Account> accounts = new ArrayList<>();
     @JsonIgnore
 
     public User (final UserInput userInput) {
@@ -28,8 +31,8 @@ public class User {
         }
     }
 
-    public static ArrayList<User> copyUsers(ArrayList<User> users) {
-        ArrayList<User> usersCopy = new ArrayList<>();
+    public static List<User> copyUsers(List<User> users) {
+        List<User> usersCopy = new ArrayList<>();
         users.forEach(user -> usersCopy.add(new User(user)));
         return usersCopy;
         /// TODO: Modify
@@ -37,8 +40,8 @@ public class User {
     }
 
     @JsonIgnore
-    public ArrayList<Transaction> getTransactions() {
-        ArrayList<Transaction> transactions = new ArrayList<>();
+    public List<Transaction> getTransactions() {
+        List<Transaction> transactions = new ArrayList<>();
         for (Account account : accounts) {
             transactions.addAll(account.getTransactions());
         }
@@ -46,9 +49,11 @@ public class User {
     }
 
     @JsonIgnore
-    public ArrayList<Transaction> getTransactionsCopy() {
-        return getTransactions();
-//        return new ArrayList<>(getTransactions());
+    public List<Transaction> getTransactionsCopy() {
+        Comparator<Transaction> timestampComparator = Comparator.comparingInt(Transaction::getTimestamp);
+        List<Transaction> transactions = getTransactions();
+        transactions.sort(timestampComparator);
+        return transactions;
     }
 
     public Account getAccountFromIBAN(final String iban) {

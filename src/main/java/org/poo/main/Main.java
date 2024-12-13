@@ -7,6 +7,8 @@ import org.poo.checker.Checker;
 import org.poo.checker.CheckerConstants;
 import org.poo.fileio.CommandInput;
 import org.poo.fileio.ObjectInput;
+import org.poo.main.BankDatabase.Bank;
+import org.poo.main.Input.BankInputHandler;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,6 +18,8 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
+
+import static org.poo.utils.Utils.resetRandom;
 
 /**
  * The entry point to this homework. It runs the checker that tests your implementation.
@@ -75,11 +79,13 @@ public final class Main {
 
         ArrayNode output = objectMapper.createArrayNode();
 
-        Output myOutput = new Output(output);
-        Bank bank = new Bank(inputData, myOutput);
+        resetRandom();
+        Bank bank = new Bank(inputData);
+        Output newOutput = new Output(output);
 
+        BankInputHandler bankInputHandler = new BankInputHandler(bank, newOutput);
         for (CommandInput commandInput : inputData.getCommands()) {
-            bank.runCommand(commandInput);
+            bankInputHandler.runCommand(commandInput);
         }
         /*
          * TODO Implement your function here

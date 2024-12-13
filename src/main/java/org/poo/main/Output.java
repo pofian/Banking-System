@@ -3,8 +3,11 @@ package org.poo.main;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.poo.main.BankDatabase.Account;
+import org.poo.main.BankDatabase.User;
+import org.poo.main.Input.Commerciant;
+import org.poo.main.Transactions.Transaction;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public final class Output {
@@ -14,7 +17,7 @@ public final class Output {
         this.output = output;
     }
 
-    public void printUsers(final ArrayList<User> users, int timestamp) {
+    public void printUsers(final List<User> users, int timestamp) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("command", "printUsers");
         node.putPOJO("output", users);
@@ -22,14 +25,14 @@ public final class Output {
         output.addPOJO(node);
     }
 
-    public void deleteAccount(int timestamp, int err) {
+    public void deleteAccount(int timestamp, boolean canDelete) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("command", "deleteAccount");
 
         ObjectNode newNode = JsonNodeFactory.instance.objectNode();
-        if (err == 0) {
+        if (canDelete) {
             newNode.put("success", "Account deleted");
-        } else if (err == 1) {
+        } else {
             newNode.put("error", "Account couldn't be deleted - see org.poo.transactions for details");
         }
         newNode.put("timestamp", timestamp);
@@ -52,7 +55,7 @@ public final class Output {
         output.addPOJO(node);
     }
 
-    public void printTransactions(ArrayList<Transaction> transactions, int timestamp) {
+    public void printTransactions(List<Transaction> transactions, int timestamp) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("command", "printTransactions");
         node.putPOJO("output", transactions);
@@ -73,7 +76,7 @@ public final class Output {
         output.addPOJO(node);
     }
 
-    public void report(ArrayList<Transaction> transactions, Account account, List<Bank.Commerciant> commerciants, boolean isSpendingReport, int timestamp) {
+    public void report(List<Transaction> transactions, Account account, List<Commerciant> commerciants, boolean isSpendingReport, int timestamp) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("command", isSpendingReport ? "spendingsReport" : "report");
 
@@ -91,13 +94,17 @@ public final class Output {
         output.addPOJO(node);
     }
 
-    public void accountNotFound(int timestamp, boolean isSpendingReport) {
+    public void reportFailed(int timestamp, boolean isSpendingReport, boolean accountFound) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("command", isSpendingReport ? "spendingsReport" : "report");
 
         ObjectNode newNode = JsonNodeFactory.instance.objectNode();
-        newNode.put("description", "Account not found");
-        newNode.put("timestamp", timestamp);
+        if (!accountFound) {
+            newNode.put("description", "Account not found");
+            newNode.put("timestamp", timestamp);
+        } else {
+            newNode.put("error", "This kind of report is not supported for a saving account");
+        }
         node.putPOJO("output", newNode);
 
         node.put("timestamp", timestamp);
