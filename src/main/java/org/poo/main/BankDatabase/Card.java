@@ -2,28 +2,40 @@ package org.poo.main.BankDatabase;
 
 import static org.poo.utils.Utils.generateCardNumber;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
-import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Getter
 public class Card {
     private final String cardNumber;
-    @Setter
     private String status;
-    @JsonIgnore @Setter
-    private boolean frozen = false, isOTP;
+    private boolean frozen;
+    private final boolean isOtp;
 
-    public Card(final boolean isOTP) {
-        this.cardNumber = generateCardNumber();
-        this.status = "active";
-        this.isOTP = isOTP;
+    public Card(final boolean isOtpGiven) {
+        cardNumber = generateCardNumber();
+        status = "active";
+        isOtp = isOtpGiven;
+        frozen = false;
     }
 
-    public Card(Card card) {
-        this.cardNumber = card.getCardNumber();
-        this.status = card.getStatus();
-        this.frozen = card.isFrozen();
-        this.isOTP = card.isOTP();
+    public Card(final Card card) {
+        cardNumber = card.getCardNumber();
+        status = card.getStatus();
+        frozen = card.isFrozen();
+        isOtp = card.isOtp();
+    }
+
+    /** JsonIgnore will work only if I add this... IDK why */
+    @JsonIgnore
+    public boolean isOtp() {
+        return isOtp;
+    }
+
+    /** */
+    @JsonIgnore
+    public void setFrozen(final boolean freezeOrNot) {
+        frozen = freezeOrNot;
+        status = frozen ? "frozen" : "active";
     }
 }

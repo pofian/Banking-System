@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.poo.main.BankDatabase.Account;
 import org.poo.main.BankDatabase.User;
-import org.poo.main.Input.Commerciant;
+import org.poo.main.Transactions.Commerciant;
 import org.poo.main.Transactions.Transaction;
 
 import java.util.List;
@@ -13,11 +13,12 @@ import java.util.List;
 public final class Output {
     private final ArrayNode output;
 
-    public Output (ArrayNode output) {
+    public Output(final ArrayNode output) {
         this.output = output;
     }
 
-    public void printUsers(final List<User> users, int timestamp) {
+    /** Prints bank user in the order they were added */
+    public void printUsers(final List<User> users, final int timestamp) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("command", "printUsers");
         node.putPOJO("output", users);
@@ -25,16 +26,15 @@ public final class Output {
         output.addPOJO(node);
     }
 
-    public void deleteAccount(int timestamp, boolean canDelete) {
+    /** Delete account */
+    public void deleteAccount(final boolean deletedSuccessfully, final int timestamp) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("command", "deleteAccount");
 
         ObjectNode newNode = JsonNodeFactory.instance.objectNode();
-        if (canDelete) {
-            newNode.put("success", "Account deleted");
-        } else {
-            newNode.put("error", "Account couldn't be deleted - see org.poo.transactions for details");
-        }
+        newNode.put(deletedSuccessfully ? "success" : "error",
+                    deletedSuccessfully ? "Account deleted"
+                            : "Account couldn't be deleted - see org.poo.transactions for details");
         newNode.put("timestamp", timestamp);
         node.putPOJO("output", newNode);
 
@@ -42,7 +42,8 @@ public final class Output {
         output.addPOJO(node);
     }
 
-    public void payOnline(int timestamp) {
+    /** Couldn't find the account that owns the card or the card */
+    public void cardNotFoundPayOnline(final int timestamp) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("command", "payOnline");
 
@@ -55,7 +56,8 @@ public final class Output {
         output.addPOJO(node);
     }
 
-    public void printTransactions(List<Transaction> transactions, int timestamp) {
+    /** Prints all the transactions made by a user, ordered by their timestamp  */
+    public void printTransactions(final List<Transaction> transactions, final int timestamp) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("command", "printTransactions");
         node.putPOJO("output", transactions);
@@ -63,7 +65,8 @@ public final class Output {
         output.addPOJO(node);
     }
 
-    public void cardNotFound(int timestamp) {
+    /** Couldn't find the card */
+    public void cardNotFoundCheckStatus(final int timestamp) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("command", "checkCardStatus");
 
@@ -76,7 +79,10 @@ public final class Output {
         output.addPOJO(node);
     }
 
-    public void report(List<Transaction> transactions, Account account, List<Commerciant> commerciants, boolean isSpendingReport, int timestamp) {
+    /** Report of all transactions and their commerciants if required  */
+    public void report(final List<Transaction> transactions, final Account account,
+                       final List<Commerciant> commerciants, final boolean isSpendingReport,
+                       final int timestamp) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("command", isSpendingReport ? "spendingsReport" : "report");
 
@@ -94,7 +100,9 @@ public final class Output {
         output.addPOJO(node);
     }
 
-    public void reportFailed(int timestamp, boolean isSpendingReport, boolean accountFound) {
+    /** Account couldn't be found or a spending report was solicited on a savings account */
+    public void reportFailed(final boolean isSpendingReport,
+                             final boolean accountFound, final int timestamp) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("command", isSpendingReport ? "spendingsReport" : "report");
 
@@ -111,9 +119,10 @@ public final class Output {
         output.addPOJO(node);
     }
 
-    public void changeInterestRate(int timestamp) {
+    /** Adding or changing the interest rate of a savings account isn't allowed */
+    public void notSavingsAccount(final boolean addOrChange, final int timestamp) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
-        node.put("command", "changeInterestRate");
+        node.put("command", addOrChange ? "addInterest" : "changeInterestRate");
 
         ObjectNode newNode = JsonNodeFactory.instance.objectNode();
         newNode.put("description", "This is not a savings account");
@@ -123,18 +132,4 @@ public final class Output {
         node.put("timestamp", timestamp);
         output.addPOJO(node);
     }
-
-    public void addInterest(int timestamp) {
-        ObjectNode node = JsonNodeFactory.instance.objectNode();
-        node.put("command", "addInterest");
-
-        ObjectNode newNode = JsonNodeFactory.instance.objectNode();
-        newNode.put("description", "This is not a savings account");
-        newNode.put("timestamp", timestamp);
-        node.putPOJO("output", newNode);
-
-        node.put("timestamp", timestamp);
-        output.addPOJO(node);
-    }
-
 }

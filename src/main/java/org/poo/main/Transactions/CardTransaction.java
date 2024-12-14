@@ -5,10 +5,10 @@ import org.poo.fileio.CommandInput;
 
 @Getter
 public class CardTransaction extends Transaction {
-    final double amount;
-    final String commerciant;
+    private final double amount;
+    private final String commerciant;
 
-    public CardTransaction(CommandInput commandInput, double paymentAmount) {
+    public CardTransaction(final CommandInput commandInput, final double paymentAmount) {
         super(commandInput.getTimestamp(), "Card payment");
         amount = paymentAmount;
         commerciant = commandInput.getCommerciant();

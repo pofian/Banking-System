@@ -5,15 +5,17 @@ import org.poo.fileio.CommandInput;
 
 @Getter
 public class SendMoneyTransaction extends Transaction {
-    final String senderIBAN;
-    final String receiverIBAN;
-    final String amount;
-    final String transferType;
+    private final String senderIBAN;
+    private final String receiverIBAN;
+    private final String amount;
+    private final String transferType;
 
-    public SendMoneyTransaction(CommandInput commandInput, double paySum, String currency, boolean sentOrReceived) {
+    public SendMoneyTransaction(final CommandInput commandInput, final String sender,
+                                final String receiver, final double paySum,
+                                final String currency, final boolean sentOrReceived) {
         super(commandInput.getTimestamp(), commandInput.getDescription());
-        senderIBAN = commandInput.getAccount();
-        receiverIBAN = commandInput.getReceiver();
+        senderIBAN = sender;
+        receiverIBAN = receiver;
         amount = paySum + " " + currency;
         transferType = sentOrReceived ? "sent" : "received";
     }

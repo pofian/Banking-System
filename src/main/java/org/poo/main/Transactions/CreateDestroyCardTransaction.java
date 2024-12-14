@@ -5,13 +5,15 @@ import org.poo.fileio.CommandInput;
 
 @Getter
 public class CreateDestroyCardTransaction extends Transaction {
-    final String account;
-    final String card;
-    final String cardHolder;
+    private final String account;
+    private final String card;
+    private final String cardHolder;
 
-    public CreateDestroyCardTransaction(CommandInput commandInput, String IBAN, String cardNumber, boolean createOrDestroy) {
-        super(commandInput.getTimestamp(), createOrDestroy ? "New card created" : "The card has been destroyed");
-        account = IBAN;
+    public CreateDestroyCardTransaction(final CommandInput commandInput, final String iban,
+                                        final String cardNumber, final boolean createOrDestroy) {
+        super(commandInput.getTimestamp(),
+                createOrDestroy ? "New card created" : "The card has been destroyed");
+        account = iban;
         card = cardNumber;
         cardHolder = commandInput.getEmail();
     }

@@ -1,15 +1,19 @@
 package org.poo.main.BankDatabase;
 
-import org.poo.fileio.CommandInput;
-import org.poo.main.Transactions.Transaction;
 import static org.poo.utils.Utils.generateIBAN;
 
-import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
+import org.poo.fileio.CommandInput;
+import org.poo.main.Transactions.Transaction;
+import org.poo.main.Transactions.SimpleTransaction;
+import org.poo.main.Transactions.CardTransaction;
+import org.poo.main.Transactions.CreateDestroyCardTransaction;
+import org.poo.main.Transactions.InterestRateChangeTransaction;
+
+import java.util.Collection;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Map;
+import java.util.LinkedHashMap;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -17,90 +21,131 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
-
 @Getter
 public class Account {
     @JsonIgnore
-    private final String IBAN;
+    private final String iban;
     private double balance = 0;
     @JsonIgnore @Setter
     private double minBalance = 0;
     private final String currency;
     private final String type;
+    enum Type {
+        Savings, Other
+    }
+    @JsonIgnore
+    private final Type typeOfCard;
+
     @JsonIgnore
     private final List<Transaction> transactions = new ArrayList<>();
     @JsonIgnore
-    private final Map<String, Card> cards = new HashMap<>();
-    /// The list is only used for output
-    @JsonProperty("cards")
-    private final List<Card> cardList;
+    private final List<CardTransaction> cardTransactions = new ArrayList<>();
+
+    /**
+     * Cards is implemented with a LinkedHashMap instead of a HashMap because
+     *   the output requires the cards to be shown in the order they were added.
+     * All operations remain O(1).
+     */
+    @JsonIgnore
+    private final Map<String, Card> cards;
 
     public Account(final CommandInput commandInput) {
-        IBAN = generateIBAN();
+        iban = generateIBAN();
         currency = commandInput.getCurrency();
         type = commandInput.getAccountType();
-        cardList = new LinkedList<>();
+        cards = new LinkedHashMap<>();
+        addTransaction(new SimpleTransaction(commandInput.getTimestamp(),
+                SimpleTransaction.TransactionType.CreateAccount));
+        typeOfCard = initialiseType();
     }
 
     public Account(final Account account) {
-        IBAN = account.getIBAN();
+        iban = account.getIBAN();
         balance = account.getBalance();
         minBalance = account.getMinBalance();
         currency = account.getCurrency();
         type = account.getType();
-        cardList = new ArrayList<>(account.getCardsAfterCleanup());
+        typeOfCard = account.getTypeOfCard();
+        /// Note to self: this might need deepcopy in the future because cards are not immutable.
+        ///     (The fields status and frozen can be changed.)
+        cards = new LinkedHashMap<>(account.getCardsMap());
     }
 
-    public void addCard(Card card) {
-        cardList.add(card);
+    /** */
+    public void addCard(final Card card, final CommandInput commandInput) {
         cards.put(card.getCardNumber(), card);
+        addTransaction(new CreateDestroyCardTransaction(
+                commandInput, getIBAN(), card.getCardNumber(), true));
     }
 
-    /// I won't delete the card from the cards List because that would be an O(n) operation
-    /// Instead, when I print I will filter out all cards that were previously deleted
-    public void deleteCard(final String cardNumber) {
-        cards.remove(cardNumber);
+    /** */
+    public void deleteCard(final String cardNumber, final CommandInput commandInput) {
+        if (cards.remove(cardNumber) == null) {
+            throw new RuntimeException("Card not found or it doesn't belong to this user");
+        }
+        addTransaction(new CreateDestroyCardTransaction(
+                commandInput, getIBAN(), cardNumber, false));
     }
 
+    /** */
     public Card getCard(final String cardNumber) {
         return cards.get(cardNumber);
     }
 
-    public boolean doesNotContainCard(final Card card) {
-        return !cards.containsKey(card.getCardNumber());
+    /** */
+    @JsonProperty("cards")
+    public Collection<Card> getCards() {
+        return cards.values();
     }
 
+    /** */
     @JsonIgnore
-    public List<Card> getCardsAfterCleanup() {
-        cardList.removeIf(this::doesNotContainCard);
-        return cardList;
+    public Map<String, Card> getCardsMap() {
+        return cards;
     }
 
-    @JsonIgnore
-    public List<Card> getCards() {
-        return cards.values().stream().toList();
-    }
-
+    /** */
     @JsonGetter("IBAN")
     public String getIBAN() {
-        return IBAN;
+        return iban;
     }
 
+    /** */
     public void addBalance(final double amount) {
         balance += amount;
     }
 
-    public void subBalance(double amount) {
+    /** */
+    public void subBalance(final double amount) {
         balance -= amount;
     }
 
+    /** */
     public void addTransaction(final Transaction transaction) {
         transactions.add(transaction);
     }
 
+    /** */
+    public void addCardTransaction(final CardTransaction transaction) {
+        cardTransactions.add(transaction);
+    }
+
+    private Type initialiseType() {
+        if (type.equals("savings")) {
+            return Type.Savings;
+        }
+        return Type.Other;
+    }
+
     @JsonIgnore
-    public boolean isSavingsAccount() {
-        return Objects.equals(type, "savings");
+    public final boolean isSavingsAccount() {
+        return typeOfCard == Type.Savings;
+    }
+
+    /** */
+    public void changeInterestRate(final CommandInput commandInput) {
+        /// Coming up next!
+        addTransaction(new InterestRateChangeTransaction(commandInput));
     }
 
 }

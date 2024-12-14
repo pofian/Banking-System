@@ -11,12 +11,13 @@ public class SplitPaymentFailedTransaction extends Transaction {
     private final String currency;
     private final List<String> involvedAccounts;
     private final String error;
-    public SplitPaymentFailedTransaction(CommandInput commandInput, String IBAN) {
-        super(commandInput.getTimestamp(), "Split payment of " + String.format
-                ("%.2f ",  commandInput.getAmount()) + commandInput.getCurrency());
+
+    public SplitPaymentFailedTransaction(final CommandInput commandInput, final String iban) {
+        super(commandInput.getTimestamp(), "Split payment of " + String.format(
+                "%.2f ",  commandInput.getAmount()) + commandInput.getCurrency());
         amount = commandInput.getAmount() / commandInput.getAccounts().size();
         currency = commandInput.getCurrency();
-        error = "Account " + IBAN + " has insufficient funds for a split payment.";
+        error = "Account " + iban + " has insufficient funds for a split payment.";
         involvedAccounts = commandInput.getAccounts();
     }
 }

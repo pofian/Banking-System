@@ -13,13 +13,13 @@ public final class SimpleTransaction extends Transaction {
         FreezeCard("You have reached the minimum amount of funds, the card will be frozen"),
         CardFrozen("The card is frozen");
 
-        final String transaction;
-        TransactionType(String s) {
+        private final String transaction;
+        TransactionType(final String s) {
             transaction = s;
         }
     }
 
-    public SimpleTransaction(int timestamp, TransactionType transactionType) {
+    public SimpleTransaction(final int timestamp, final TransactionType transactionType) {
         super(timestamp, transactionType.getTransaction());
     }
 }
