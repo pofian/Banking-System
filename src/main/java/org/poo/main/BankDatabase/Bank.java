@@ -6,7 +6,6 @@ import org.poo.fileio.UserInput;
 import org.poo.main.Payments.CurrencyExchanger;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.LinkedHashMap;
@@ -66,9 +65,9 @@ public class Bank {
 
     /** Returns all users present in the bank at a certain time */
     @JsonIgnore
-    public List<User> getUsersMemento() {
-        List<User> usersCopy = new ArrayList<>();
-        getUsers().forEach(user -> usersCopy.add(new User(user)));
-        return usersCopy;
+    public Collection<UserRecord> getUsersRecord() {
+        Collection<UserRecord> usersRecord = new ArrayList<>();
+        getUsers().forEach(user -> usersRecord.add(new UserRecord(user)));
+        return usersRecord;
     }
 }

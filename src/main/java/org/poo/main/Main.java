@@ -77,6 +77,7 @@ public final class Main {
         ObjectInput inputData = objectMapper.readValue(file, ObjectInput.class);
 
         ArrayNode output = objectMapper.createArrayNode();
+
         resetRandom();
         Bank bank = new Bank(inputData);
         Output newOutput = new Output(output);

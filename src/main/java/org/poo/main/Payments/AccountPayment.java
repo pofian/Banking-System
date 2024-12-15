@@ -6,10 +6,10 @@ import org.poo.main.BankDatabase.Account;
 /** Implements the payment between two accounts that might use different currencies */
 @Getter
 public class AccountPayment implements PaymentStrategy {
-    private CurrencyExchanger currencyExchanger;
+    private final CurrencyExchanger currencyExchanger;
+    private final Account sender, receiver;
     private double amountSent, amountReceived;
-    private Account sender, receiver;
-    private boolean initialised = false, validated = false;
+    private boolean executed = false, validated = false;
 
     /** Transfers the amount from one account to another */
     @Override
@@ -17,12 +17,12 @@ public class AccountPayment implements PaymentStrategy {
         if (!validated) {
             throw new RuntimeException("Can't run a payment that isn't validated");
         }
+
         sender.subBalance(amountSent);
         if (receiver != null) {
             receiver.addBalance(amountReceived);
         }
-        initialised = false;
-        validated = false;
+        executed = true;
     }
 
     /**
@@ -31,8 +31,12 @@ public class AccountPayment implements PaymentStrategy {
      */
     @Override
     public ErrorCode validate() {
-        if (!initialised) {
-            throw new RuntimeException("Can't validate a payment that isn't initialised");
+        if (validated) {
+            throw new RuntimeException("Already validated!");
+        }
+
+        if (executed) {
+            throw new RuntimeException("Already executed!");
         }
 
         if (sender.getBalance() < amountSent) {
@@ -57,28 +61,12 @@ public class AccountPayment implements PaymentStrategy {
         }
     }
 
-    /**
-     * Used for creating new payments without allocating more memory.
-     * Isn't void in order to allow the call .initialise().validate() to be made.
-     */
-    public AccountPayment initialise(final Account moneySender, final Account moneyReceiver,
-                                     final double amount, final String currency) {
-        initialised = true;
-        validated = false;
+    public AccountPayment(final Account moneySender, final Account moneyReceiver,
+                          final double amount, final String currency,
+                          final CurrencyExchanger givenCurrencyExchanger) {
         sender = moneySender;
         receiver = moneyReceiver;
-        calculateAmounts(amount, currency);
-        return this;
-    }
-
-    /** Setting another currency exchanger must invalidate the previous payment. */
-    public void setCurrencyExchanger(final CurrencyExchanger givenCurrencyExchanger) {
-        initialised = false;
-        validated = false;
         currencyExchanger = givenCurrencyExchanger;
-    }
-
-    public AccountPayment(final CurrencyExchanger givenCurrencyExchanger) {
-        setCurrencyExchanger(givenCurrencyExchanger);
+        calculateAmounts(amount, currency);
     }
 }

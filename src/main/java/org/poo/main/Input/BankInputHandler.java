@@ -6,6 +6,7 @@ import org.poo.fileio.CommandInput;
 import org.poo.main.BankDatabase.Bank;
 import org.poo.main.BankDatabase.User;
 import org.poo.main.BankDatabase.Account;
+import org.poo.main.BankDatabase.SavingsAccount;
 import org.poo.main.BankDatabase.Card;
 import org.poo.main.Payments.AccountPayment;
 import org.poo.main.Transactions.Commerciant;
@@ -17,6 +18,7 @@ import org.poo.main.Transactions.SendMoneyTransaction;
 import org.poo.main.Transactions.SplitPaymentTransaction;
 import org.poo.main.Transactions.SplitPaymentFailedTransaction;
 
+import java.util.Objects;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -28,21 +30,19 @@ public class BankInputHandler {
     @Setter
     private Bank bank;
     private final Output output;
-    private final AccountPayment accountPayment;
 
     public BankInputHandler(final Bank givenBank, final Output givenOutput) {
         bank = givenBank;
         output = givenOutput;
-        accountPayment = new AccountPayment(bank.getCurrencyExchanger());
     }
 
     /** Adds a memento of the users at the current time to output */
     private void printUsers(final CommandInput commandInput) {
-        output.printUsers(bank.getUsersMemento(), commandInput.getTimestamp());
+        output.printUsers(bank.getUsersRecord(), commandInput.getTimestamp());
     }
 
     /** Adds a memento of the transactions made by the user up to the current time to output */
-    public void printTransactions(final CommandInput commandInput) {
+    private void printTransactions(final CommandInput commandInput) {
         User user = bank.getUserFromEmail(commandInput.getEmail());
         if (user != null) {
             output.printTransactions(user.getTransactions(), commandInput.getTimestamp());
@@ -53,7 +53,9 @@ public class BankInputHandler {
     private void addAccount(final CommandInput commandInput) {
         User user = bank.getUserFromEmail(commandInput.getEmail());
         if (user != null) {
-            user.addAccount(new Account(commandInput));
+            Account account = Objects.equals(commandInput.getAccountType(), "savings")
+                    ? new SavingsAccount(commandInput) : new Account(commandInput);
+            user.addAccount(account);
         }
     }
 
@@ -65,14 +67,15 @@ public class BankInputHandler {
         }
     }
 
+    /** Some commands can use this */
+    private Account getAccountOwnedByAnUser(final CommandInput commandInput) {
+        User user = bank.getUserFromEmail(commandInput.getEmail());
+        return user == null ? null : user.getAccount(commandInput.getAccount());
+    }
+
     /** Sets an alias to an account so that it can be accessed without its IBAN */
     private void setAlias(final CommandInput commandInput) {
-        User user = bank.getUserFromEmail(commandInput.getEmail());
-        if (user == null) {
-            return;
-        }
-
-        Account account = bank.getAccountFromIBAN(commandInput.getAccount());
+        Account account = getAccountOwnedByAnUser(commandInput);
         if (account == null) {
             return;
         }
@@ -111,15 +114,15 @@ public class BankInputHandler {
         }
     }
 
-    /** Changes the interest rate of an account (that must not be a savings account) */
-    private void changeInterestRate(final CommandInput commandInput) {
+    /** Adds or changes the interest rate of an account (that must not be a savings account) */
+    private void changeInterestRate(final CommandInput commandInput, final boolean addOrChange) {
         Account account = bank.getAccountFromIBAN(commandInput.getAccount());
         if (account == null) {
             return;
         }
 
         if (!account.isSavingsAccount()) {
-            output.notSavingsAccount(false, commandInput.getTimestamp());
+            output.notSavingsAccount(addOrChange, commandInput.getTimestamp());
             return;
         }
 
@@ -127,15 +130,18 @@ public class BankInputHandler {
     }
 
     /** Freeze a card if it belongs to an account that has less balance that its set minimum */
-    public void checkCardStatus(final CommandInput commandInput) {
+    private void checkCardStatus(final CommandInput commandInput) {
         String cardNumber = commandInput.getCardNumber();
         Account account = bank.getAccountThatOwnsCard(cardNumber);
         if (account == null) {
             output.cardNotFoundCheckStatus(commandInput.getTimestamp());
             return;
         }
+
         Card card = account.getCard(cardNumber);
-        assert card != null : "checkCardStatus went wrong - this shouldn't happen";
+        if (card == null) {
+            throw new RuntimeException("checkCardStatus went wrong - this shouldn't happen");
+        }
 
         if (account.getBalance() <= account.getMinBalance()) {
             card.setFrozen(true);
@@ -145,7 +151,7 @@ public class BankInputHandler {
     }
 
     /** Creates a report for all transactions made by an account. */
-    public void report(final CommandInput commandInput, final boolean isSpendingReport) {
+    private void report(final CommandInput commandInput, final boolean isSpendingReport) {
         Account account = bank.getAccountFromIBAN(commandInput.getAccount());
         if (account == null) {
             output.reportFailed(isSpendingReport, false, commandInput.getTimestamp());
@@ -212,8 +218,9 @@ public class BankInputHandler {
             if (account == null) {
                 continue;
             }
-            AccountPayment newPayment = new AccountPayment(accountPayment.getCurrencyExchanger()).
-                    initialise(account,  null, amount, commandInput.getCurrency());
+
+            AccountPayment newPayment = new AccountPayment(account, null, amount,
+                    commandInput.getCurrency(), bank.getCurrencyExchanger());
             if (newPayment.validate() != AccountPayment.ErrorCode.Validated) {
                 return iban;
             }
@@ -229,7 +236,7 @@ public class BankInputHandler {
     }
 
     /** Checks if all account can pay. If not, send every one a split failed transaction */
-    public void splitPayment(final CommandInput commandInput) {
+    private void splitPayment(final CommandInput commandInput) {
         String moneylessAccount = accountThatCannotPay(commandInput);
         if (moneylessAccount != null) {
             Transaction splitFailedTransaction =
@@ -241,16 +248,15 @@ public class BankInputHandler {
     }
 
     /** Tries making a payment from an account to another */
-    private boolean paymentFailed(final Account sender, final Account receiver,
-                                  final double amount, final String currency, final int timestamp) {
-        switch (accountPayment.initialise(sender, receiver, amount, currency).validate()) {
+    private boolean paymentFailed(final AccountPayment accountPayment, final int timestamp) {
+        switch (accountPayment.validate()) {
             case Validated -> {
                 accountPayment.execute();
                 return false;
             }
-            case InsufficientFunds -> sender.addTransaction(
+            case InsufficientFunds -> accountPayment.getSender().addTransaction(
                     new SimpleTransaction(timestamp, TransactionType.InsufficientFounds));
-            case MinBalanceSet -> sender.addTransaction(
+            case MinBalanceSet -> accountPayment.getSender().addTransaction(
                     new SimpleTransaction(timestamp, TransactionType.MinBalanceSet));
             default -> throw new RuntimeException("Error not handled");
         }
@@ -261,20 +267,20 @@ public class BankInputHandler {
      *  Makes a transfer between accounts of a given sum.
      *  Converts the amount if the receiver doesn't use the same currency as the sender.
      */
-    public void sendMoney(final CommandInput commandInput) {
-        User user = bank.getUserFromEmail(commandInput.getEmail());
-        if (user == null) {
+    private void sendMoney(final CommandInput commandInput) {
+        Account accountSender = getAccountOwnedByAnUser(commandInput);
+        if (accountSender == null) {
             return;
         }
 
-        Account accountSender = user.getAccount(commandInput.getAccount());
         Account accountReceiver = bank.getAccountFromIBAN(commandInput.getReceiver());
-        if (accountSender == null || accountReceiver == null) {
+        if (accountReceiver == null) {
             return;
         }
 
-        if (paymentFailed(accountSender, accountReceiver, commandInput.getAmount(),
-                accountSender.getCurrency(), commandInput.getTimestamp())) {
+        AccountPayment accountPayment = new AccountPayment(accountSender, accountReceiver,
+                commandInput.getAmount(), accountSender.getCurrency(), bank.getCurrencyExchanger());
+        if (paymentFailed(accountPayment, commandInput.getTimestamp())) {
             return;
         }
 
@@ -287,7 +293,7 @@ public class BankInputHandler {
     }
 
     /** Payment with a card */
-    public void payOnline(final CommandInput commandInput) {
+    private void payOnline(final CommandInput commandInput) {
         User user = bank.getUserFromEmail(commandInput.getEmail());
         if (user == null) {
             return;
@@ -312,39 +318,31 @@ public class BankInputHandler {
             return;
         }
 
-        if (paymentFailed(account, null, commandInput.getAmount(),
-                commandInput.getCurrency(), commandInput.getTimestamp())) {
+        AccountPayment payment = new AccountPayment(account, null, commandInput.getAmount(),
+                commandInput.getCurrency(), bank.getCurrencyExchanger());
+        if (paymentFailed(payment, commandInput.getTimestamp())) {
             return;
         }
 
         CardTransaction transaction = new CardTransaction(
-                commandInput, accountPayment.getAmountSent());
+                commandInput, payment.getAmountSent());
         account.addTransaction(transaction);
         account.addCardTransaction(transaction);
-        if (card.isOtp()) {
-            account.deleteCard(cardNumber, commandInput);
-            Card newCard = new Card(true);
-            account.addCard(newCard, commandInput);
-        }
+        card.executePayment(commandInput.getTimestamp());
     }
 
     /** Adds a new card to an account */
-    public void createCard(final CommandInput commandInput, final boolean isOTP) {
-        User user = bank.getUserFromEmail(commandInput.getEmail());
-        if (user == null) {
-            return;
-        }
-
-        Account account = user.getAccount(commandInput.getAccount());
+    private void createCard(final CommandInput commandInput, final boolean isOTP) {
+        Account account = getAccountOwnedByAnUser(commandInput);
         if (account == null) {
             return;
         }
 
-        account.addCard(new Card(isOTP), commandInput);
+        account.addNewCard(isOTP, commandInput.getTimestamp());
     }
 
     /** Deletes a card */
-    public void deleteCard(final CommandInput commandInput) {
+    private void deleteCard(final CommandInput commandInput) {
         User user = bank.getUserFromEmail(commandInput.getEmail());
         if (user == null) {
             return;
@@ -356,7 +354,7 @@ public class BankInputHandler {
             return;
         }
 
-        account.deleteCard(cardNumber, commandInput);
+        account.deleteCard(cardNumber, commandInput.getTimestamp());
     }
 
     /** Command handler */
@@ -372,7 +370,8 @@ public class BankInputHandler {
             case "setAlias" -> setAlias(commandInput);
             case "sendMoney" -> sendMoney(commandInput);
             case "setMinBalance", "setMinimumBalance" -> setMinimumBalance(commandInput);
-            case "changeInterestRate" -> changeInterestRate(commandInput);
+            case "addInterest" -> changeInterestRate(commandInput, true);
+            case "changeInterestRate" -> changeInterestRate(commandInput, false);
             case "report" -> report(commandInput,  false);
             case "spendingsReport" -> report(commandInput,  true);
             case "splitPayment" -> splitPayment(commandInput);
@@ -382,8 +381,6 @@ public class BankInputHandler {
             case "deleteCard" -> deleteCard(commandInput);
             case "checkCardStatus" -> checkCardStatus(commandInput);
             case "payOnline" -> payOnline(commandInput);
-
-            case "addInterest" -> output.notSavingsAccount(true, commandInput.getTimestamp());
 
             default -> throw new RuntimeException("Invalid command : " + commandInput.getCommand());
         }

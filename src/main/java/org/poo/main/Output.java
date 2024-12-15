@@ -4,13 +4,13 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.poo.main.BankDatabase.Account;
-import org.poo.main.BankDatabase.User;
+import org.poo.main.BankDatabase.UserRecord;
 import org.poo.main.Transactions.Commerciant;
 import org.poo.main.Transactions.Transaction;
 
-import java.util.List;
+import java.util.Collection;
 
-public final class Output {
+public class Output {
     private final ArrayNode output;
 
     public Output(final ArrayNode output) {
@@ -18,7 +18,7 @@ public final class Output {
     }
 
     /** Prints bank user in the order they were added */
-    public void printUsers(final List<User> users, final int timestamp) {
+    public void printUsers(final Collection<UserRecord> users, final int timestamp) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("command", "printUsers");
         node.putPOJO("output", users);
@@ -57,7 +57,7 @@ public final class Output {
     }
 
     /** Prints all the transactions made by a user, ordered by their timestamp  */
-    public void printTransactions(final List<Transaction> transactions, final int timestamp) {
+    public void printTransactions(final Collection<Transaction> transactions, final int timestamp) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("command", "printTransactions");
         node.putPOJO("output", transactions);
@@ -80,8 +80,8 @@ public final class Output {
     }
 
     /** Report of all transactions and their commerciants if required  */
-    public void report(final List<Transaction> transactions, final Account account,
-                       final List<Commerciant> commerciants, final boolean isSpendingReport,
+    public void report(final Collection<Transaction> transactions, final Account account,
+                       final Collection<Commerciant> commerciants, final boolean isSpendingReport,
                        final int timestamp) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("command", isSpendingReport ? "spendingsReport" : "report");

@@ -6,7 +6,7 @@ public interface PaymentStrategy {
     }
     /**
      * Must verify if the payment can be made (sender has enough money, etc.)
-     * If not, returns a nonzero error code
+     * If not, returns an error code
      */
     ErrorCode validate();
 

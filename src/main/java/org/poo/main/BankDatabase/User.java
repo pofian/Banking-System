@@ -5,14 +5,11 @@ import org.poo.main.Transactions.Transaction;
 
 import java.util.Comparator;
 import java.util.Collection;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 
 public class User {
@@ -33,14 +30,6 @@ public class User {
         email = userInput.getEmail();
     }
 
-    public User(final User user) {
-        firstName = user.getFirstName();
-        lastName = user.getLastName();
-        email = user.getEmail();
-        /// Deepcopy
-        user.getAccounts().forEach(account -> addAccount(new Account(account)));
-    }
-
     /** */
     public void addAccount(final Account account) {
         accounts.put(account.getIBAN(), account);
@@ -49,12 +38,6 @@ public class User {
     /** */
     public void deleteAccount(final Account account) {
         accounts.remove(account.getIBAN());
-    }
-
-    /** */
-    @JsonProperty("accounts")
-    public Collection<Account> getAccounts() {
-        return accounts.values();
     }
 
     /** */
@@ -69,6 +52,18 @@ public class User {
     }
 
     /** */
+    public Collection<Account> getAccounts() {
+        return accounts.values();
+    }
+
+    /** */
+    public Collection<AccountRecord> getAccountsRecord() {
+        ArrayList<AccountRecord> accountsRecord = new ArrayList<>();
+        getAccounts().forEach(account -> accountsRecord.add(new AccountRecord(account)));
+        return accountsRecord;
+    }
+
+    /** */
     public Account getAccountThatHasCard(final String cardNumber) {
         for (Account account : getAccounts()) {
             if (account.getCard(cardNumber) != null) {
@@ -79,9 +74,8 @@ public class User {
     }
 
     /** Returns the transactions made by a user from any account, sorted by timestamp */
-    @JsonIgnore
-    public List<Transaction> getTransactions() {
-        List<Transaction> transactions = new ArrayList<>();
+    public Collection<Transaction> getTransactions() {
+        ArrayList<Transaction> transactions = new ArrayList<>();
         getAccounts().forEach(account -> transactions.addAll(account.getTransactions()));
         transactions.sort(Comparator.comparingInt(Transaction::getTimestamp));
         return transactions;

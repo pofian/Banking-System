@@ -7,7 +7,6 @@ import org.poo.main.Transactions.Transaction;
 import org.poo.main.Transactions.SimpleTransaction;
 import org.poo.main.Transactions.CardTransaction;
 import org.poo.main.Transactions.CreateDestroyCardTransaction;
-import org.poo.main.Transactions.InterestRateChangeTransaction;
 
 import java.util.Collection;
 import java.util.List;
@@ -15,30 +14,19 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.LinkedHashMap;
 
-import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 public class Account {
-    @JsonIgnore
-    private final String iban;
-    private double balance = 0;
-    @JsonIgnore @Setter
-    private double minBalance = 0;
-    private final String currency;
-    private final String type;
-    enum Type {
-        Savings, Other
-    }
-    @JsonIgnore
-    private final Type typeOfCard;
+    private final String iban, type, currency;
+    @Setter
+    private double balance = 0, minBalance = 0;
 
-    @JsonIgnore
+    // Note: This is added only because the addCard and deleteCard transactions
+    //      require printing the owner of the account for whatever reason.
+    private final String ownerEmail;
     private final List<Transaction> transactions = new ArrayList<>();
-    @JsonIgnore
     private final List<CardTransaction> cardTransactions = new ArrayList<>();
 
     /**
@@ -46,45 +34,33 @@ public class Account {
      *   the output requires the cards to be shown in the order they were added.
      * All operations remain O(1).
      */
-    @JsonIgnore
-    private final Map<String, Card> cards;
+    private final Map<String, Card> cards = new LinkedHashMap<>();
 
     public Account(final CommandInput commandInput) {
         iban = generateIBAN();
         currency = commandInput.getCurrency();
         type = commandInput.getAccountType();
-        cards = new LinkedHashMap<>();
+        ownerEmail = commandInput.getEmail();
         addTransaction(new SimpleTransaction(commandInput.getTimestamp(),
                 SimpleTransaction.TransactionType.CreateAccount));
-        typeOfCard = initialiseType();
     }
 
-    public Account(final Account account) {
-        iban = account.getIBAN();
-        balance = account.getBalance();
-        minBalance = account.getMinBalance();
-        currency = account.getCurrency();
-        type = account.getType();
-        typeOfCard = account.getTypeOfCard();
-        /// Note to self: this might need deepcopy in the future because cards are not immutable.
-        ///     (The fields status and frozen can be changed.)
-        cards = new LinkedHashMap<>(account.getCardsMap());
-    }
-
-    /** */
-    public void addCard(final Card card, final CommandInput commandInput) {
+    /** Creates a new card */
+    public void addNewCard(final boolean isOTP, final int timestamp) {
+        Card card = isOTP ? new OtpCard(this) : new Card();
         cards.put(card.getCardNumber(), card);
         addTransaction(new CreateDestroyCardTransaction(
-                commandInput, getIBAN(), card.getCardNumber(), true));
+                timestamp, card.getCardNumber(), iban, ownerEmail, true));
     }
 
     /** */
-    public void deleteCard(final String cardNumber, final CommandInput commandInput) {
+    public void deleteCard(final String cardNumber, final int timestamp) {
         if (cards.remove(cardNumber) == null) {
-            throw new RuntimeException("Card not found or it doesn't belong to this user");
+            throw new RuntimeException("Card not found or it doesn't belong to this account");
         }
+
         addTransaction(new CreateDestroyCardTransaction(
-                commandInput, getIBAN(), cardNumber, false));
+                timestamp, cardNumber, iban, ownerEmail, false));
     }
 
     /** */
@@ -93,19 +69,18 @@ public class Account {
     }
 
     /** */
-    @JsonProperty("cards")
     public Collection<Card> getCards() {
         return cards.values();
     }
 
     /** */
-    @JsonIgnore
-    public Map<String, Card> getCardsMap() {
-        return cards;
+    public Collection<CardRecord> getCardsRecord() {
+        Collection<CardRecord> cardRecords = new ArrayList<>();
+        cards.values().forEach(card -> cardRecords.add(new CardRecord(card)));
+        return cardRecords;
     }
 
-    /** */
-    @JsonGetter("IBAN")
+    /** getIban() is kinda weird */
     public String getIBAN() {
         return iban;
     }
@@ -130,22 +105,14 @@ public class Account {
         cardTransactions.add(transaction);
     }
 
-    private Type initialiseType() {
-        if (type.equals("savings")) {
-            return Type.Savings;
-        }
-        return Type.Other;
+    /** Overwritten by SavingsAccount */
+    public boolean isSavingsAccount() {
+        return false;
     }
 
-    @JsonIgnore
-    public final boolean isSavingsAccount() {
-        return typeOfCard == Type.Savings;
-    }
-
-    /** */
+    /** Overwritten by SavingsAccount */
     public void changeInterestRate(final CommandInput commandInput) {
-        /// Coming up next!
-        addTransaction(new InterestRateChangeTransaction(commandInput));
+        throw new UnsupportedOperationException("This isn't a savings account");
     }
 
 }
