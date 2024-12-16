@@ -2,7 +2,11 @@ package org.poo.main.IO;
 
 import lombok.Setter;
 import org.poo.fileio.CommandInput;
-import org.poo.main.BankDatabase.*;
+import org.poo.main.BankDatabase.Bank;
+import org.poo.main.BankDatabase.User;
+import org.poo.main.BankDatabase.Account;
+import org.poo.main.BankDatabase.Card;
+import org.poo.main.BankDatabase.DatabaseFactory;
 import org.poo.main.Payments.AccountPayment;
 import org.poo.main.Payments.CardPayment;
 import org.poo.main.Payments.SendMoneyAccountPayment;
@@ -333,7 +337,7 @@ public class BankInputHandler {
             case "addInterest" -> changeInterestRate(commandInput, true);
             case "changeInterestRate" -> changeInterestRate(commandInput, false);
             case "report" -> report(commandInput, false);
-            case "spendingsReport" -> report(commandInput,true);
+            case "spendingsReport" -> report(commandInput, true);
             case "splitPayment" -> splitPayment(commandInput);
 
             case "createCard" -> createCard(commandInput, false);
