@@ -1,7 +1,6 @@
-package org.poo.main.Input;
+package org.poo.main.IO;
 
 import lombok.Setter;
-import org.poo.main.Output;
 import org.poo.fileio.CommandInput;
 import org.poo.main.BankDatabase.Bank;
 import org.poo.main.BankDatabase.User;
@@ -9,12 +8,13 @@ import org.poo.main.BankDatabase.Account;
 import org.poo.main.BankDatabase.SavingsAccount;
 import org.poo.main.BankDatabase.Card;
 import org.poo.main.Payments.AccountPayment;
+import org.poo.main.Payments.CardPayment;
+import org.poo.main.Payments.SendMoneyAccountPayment;
 import org.poo.main.Transactions.Commerciant;
 import org.poo.main.Transactions.Transaction;
 import org.poo.main.Transactions.SimpleTransaction;
 import org.poo.main.Transactions.SimpleTransaction.TransactionType;
 import org.poo.main.Transactions.CardTransaction;
-import org.poo.main.Transactions.SendMoneyTransaction;
 import org.poo.main.Transactions.SplitPaymentTransaction;
 import org.poo.main.Transactions.SplitPaymentFailedTransaction;
 
@@ -91,7 +91,7 @@ public class BankInputHandler {
             return;
         }
 
-        Account account = bank.getAccountFromIBAN(commandInput.getAccount());
+        Account account = user.getAccount(commandInput.getAccount());
         if (account == null) {
             return;
         }
@@ -216,12 +216,14 @@ public class BankInputHandler {
         for (String iban : commandInput.getAccounts().reversed()) {
             Account account = bank.getAccountFromIBAN(iban);
             if (account == null) {
-                continue;
+                throw new RuntimeException("Non existent account");
             }
 
             AccountPayment newPayment = new AccountPayment(account, null, amount,
-                    commandInput.getCurrency(), bank.getCurrencyExchanger());
-            if (newPayment.validate() != AccountPayment.ErrorCode.Validated) {
+                    commandInput.getCurrency(), bank.getCurrencyExchanger(),
+                    commandInput.getDescription(), commandInput.getTimestamp());
+            newPayment.validate();
+            if (!newPayment.canExecute()) {
                 return iban;
             }
             accountPayments.add(newPayment);
@@ -247,22 +249,6 @@ public class BankInputHandler {
         }
     }
 
-    /** Tries making a payment from an account to another */
-    private boolean paymentFailed(final AccountPayment accountPayment, final int timestamp) {
-        switch (accountPayment.validate()) {
-            case Validated -> {
-                accountPayment.execute();
-                return false;
-            }
-            case InsufficientFunds -> accountPayment.getSender().addTransaction(
-                    new SimpleTransaction(timestamp, TransactionType.InsufficientFounds));
-            case MinBalanceSet -> accountPayment.getSender().addTransaction(
-                    new SimpleTransaction(timestamp, TransactionType.MinBalanceSet));
-            default -> throw new RuntimeException("Error not handled");
-        }
-        return true;
-    }
-
     /**
      *  Makes a transfer between accounts of a given sum.
      *  Converts the amount if the receiver doesn't use the same currency as the sender.
@@ -278,18 +264,11 @@ public class BankInputHandler {
             return;
         }
 
-        AccountPayment accountPayment = new AccountPayment(accountSender, accountReceiver,
-                commandInput.getAmount(), accountSender.getCurrency(), bank.getCurrencyExchanger());
-        if (paymentFailed(accountPayment, commandInput.getTimestamp())) {
-            return;
-        }
-
-        accountSender.addTransaction(new SendMoneyTransaction(commandInput,
-                accountSender.getIBAN(), accountReceiver.getIBAN(),
-                accountPayment.getAmountSent(), accountSender.getCurrency(), true));
-        accountReceiver.addTransaction(new SendMoneyTransaction(commandInput,
-                accountSender.getIBAN(), accountReceiver.getIBAN(),
-                accountPayment.getAmountReceived(), accountReceiver.getCurrency(), false));
+        AccountPayment payment = new SendMoneyAccountPayment(accountSender, accountReceiver,
+                commandInput.getAmount(), accountSender.getCurrency(), bank.getCurrencyExchanger(),
+                commandInput.getDescription(), commandInput.getTimestamp());
+        payment.validate();
+        payment.reportErrorOrExecute();
     }
 
     /** Payment with a card */
@@ -312,23 +291,11 @@ public class BankInputHandler {
             return;
         }
 
-        if (card.isFrozen()) {
-            account.addTransaction(new SimpleTransaction(
-                    commandInput.getTimestamp(), TransactionType.CardFrozen));
-            return;
-        }
-
-        AccountPayment payment = new AccountPayment(account, null, commandInput.getAmount(),
-                commandInput.getCurrency(), bank.getCurrencyExchanger());
-        if (paymentFailed(payment, commandInput.getTimestamp())) {
-            return;
-        }
-
-        CardTransaction transaction = new CardTransaction(
-                commandInput, payment.getAmountSent());
-        account.addTransaction(transaction);
-        account.addCardTransaction(transaction);
-        card.executePayment(commandInput.getTimestamp());
+        CardPayment payment = new CardPayment(card, account, null, commandInput.getCommerciant(),
+                commandInput.getAmount(), commandInput.getCurrency(),
+                bank.getCurrencyExchanger(), commandInput.getTimestamp());
+        payment.validate();
+        payment.reportErrorOrExecute();
     }
 
     /** Adds a new card to an account */
