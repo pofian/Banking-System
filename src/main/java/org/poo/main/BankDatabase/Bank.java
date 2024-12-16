@@ -3,6 +3,7 @@ package org.poo.main.BankDatabase;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.poo.fileio.ObjectInput;
 import org.poo.fileio.UserInput;
+import org.poo.main.BankDatabase.Records.UserRecord;
 import org.poo.main.Payments.CurrencyExchanger;
 
 import java.util.Collection;

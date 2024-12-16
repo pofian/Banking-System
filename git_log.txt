@@ -1,3 +1,27 @@
+commit 609f1f94408b247882c98de06d7dbc47e3b97fcd
+Author: Popa Filip-Andrei <andrei.filip.popa@gmail.com>
+Date:   Mon Dec 16 16:54:32 2024 +0200
+
+    Implemented Account and Card payment classes
+
+commit 3a1bd46f6d7cdd7247c2f7288bdabb7363138bc1
+Author: Popa Filip-Andrei <andrei.filip.popa@gmail.com>
+Date:   Sun Dec 15 20:08:37 2024 +0200
+
+    Refactored & optimised
+
+commit 996a3cd47f4c2f74b5de9ef7a07d1f91c336f66f
+Author: Popa Filip-Andrei <andrei.filip.popa@gmail.com>
+Date:   Sat Dec 14 22:34:36 2024 +0200
+
+    Refactored and solved style
+
+commit 1c9b3790c1f1ccf8e76e7d8bffbcab0fae600019
+Author: Popa Filip-Andrei <andrei.filip.popa@gmail.com>
+Date:   Fri Dec 13 23:50:17 2024 +0200
+
+    Made all operations O(1)
+
 commit c79b3000286c34cb1d281344e66c2e779be26549
 Author: Popa Filip-Andrei <andrei.filip.popa@gmail.com>
 Date:   Fri Dec 13 18:20:11 2024 +0200

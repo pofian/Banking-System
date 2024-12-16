@@ -1,6 +1,5 @@
 package org.poo.main.BankDatabase;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.poo.fileio.CommandInput;
 import org.poo.main.Transactions.InterestRateChangeTransaction;
 
@@ -10,7 +9,6 @@ public class SavingsAccount extends Account {
         super(commandInput);
     }
 
-    @JsonProperty
     public final boolean isSavingsAccount() {
         return true;
     }

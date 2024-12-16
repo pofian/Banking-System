@@ -62,7 +62,7 @@ public class AccountPayment implements PaymentStrategy {
     @Override
     public final void execute() {
         if (status != StatusCode.CanExecute) {
-            throw new RuntimeException("Can't run this payment");
+            throw new RuntimeException("Can't execute this payment");
         }
         executeMethod();
         reportSuccessMethod();

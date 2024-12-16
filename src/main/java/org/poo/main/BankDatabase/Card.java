@@ -22,7 +22,7 @@ public class Card {
         status = frozen ? "frozen" : "active";
     }
 
-    /** Extended by OtpCard */
+    /** Overwritten by OtpCard */
     public void executePayment(final int timestamp) {
 
     }

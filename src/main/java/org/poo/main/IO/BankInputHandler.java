@@ -2,11 +2,7 @@ package org.poo.main.IO;
 
 import lombok.Setter;
 import org.poo.fileio.CommandInput;
-import org.poo.main.BankDatabase.Bank;
-import org.poo.main.BankDatabase.User;
-import org.poo.main.BankDatabase.Account;
-import org.poo.main.BankDatabase.SavingsAccount;
-import org.poo.main.BankDatabase.Card;
+import org.poo.main.BankDatabase.*;
 import org.poo.main.Payments.AccountPayment;
 import org.poo.main.Payments.CardPayment;
 import org.poo.main.Payments.SendMoneyAccountPayment;
@@ -18,7 +14,6 @@ import org.poo.main.Transactions.CardTransaction;
 import org.poo.main.Transactions.SplitPaymentTransaction;
 import org.poo.main.Transactions.SplitPaymentFailedTransaction;
 
-import java.util.Objects;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -53,9 +48,7 @@ public class BankInputHandler {
     private void addAccount(final CommandInput commandInput) {
         User user = bank.getUserFromEmail(commandInput.getEmail());
         if (user != null) {
-            Account account = Objects.equals(commandInput.getAccountType(), "savings")
-                    ? new SavingsAccount(commandInput) : new Account(commandInput);
-            user.addAccount(account);
+            user.addAccount(DatabaseFactory.newAccount(commandInput));
         }
     }
 
@@ -80,7 +73,7 @@ public class BankInputHandler {
             return;
         }
 
-        /// TODO : Uncomment after refs update
+        /// TODO : Uncomment after refs are updated
         // user.setAlias(account, commandInput.getAlias());
     }
 
@@ -336,15 +329,15 @@ public class BankInputHandler {
             case "addFunds" -> addFunds(commandInput);
             case "setAlias" -> setAlias(commandInput);
             case "sendMoney" -> sendMoney(commandInput);
-            case "setMinBalance", "setMinimumBalance" -> setMinimumBalance(commandInput);
+            case "setMinimumBalance" -> setMinimumBalance(commandInput);
             case "addInterest" -> changeInterestRate(commandInput, true);
             case "changeInterestRate" -> changeInterestRate(commandInput, false);
-            case "report" -> report(commandInput,  false);
-            case "spendingsReport" -> report(commandInput,  true);
+            case "report" -> report(commandInput, false);
+            case "spendingsReport" -> report(commandInput,true);
             case "splitPayment" -> splitPayment(commandInput);
 
-            case "createCard" -> createCard(commandInput,  false);
-            case "createOneTimeCard" -> createCard(commandInput,  true);
+            case "createCard" -> createCard(commandInput, false);
+            case "createOneTimeCard" -> createCard(commandInput, true);
             case "deleteCard" -> deleteCard(commandInput);
             case "checkCardStatus" -> checkCardStatus(commandInput);
             case "payOnline" -> payOnline(commandInput);

@@ -1,6 +1,7 @@
-package org.poo.main.BankDatabase;
+package org.poo.main.BankDatabase.Records;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.poo.main.BankDatabase.Account;
 
 import java.util.Collection;
 

@@ -3,6 +3,7 @@ package org.poo.main.BankDatabase;
 import static org.poo.utils.Utils.generateIBAN;
 
 import org.poo.fileio.CommandInput;
+import org.poo.main.BankDatabase.Records.CardRecord;
 import org.poo.main.Transactions.Transaction;
 import org.poo.main.Transactions.SimpleTransaction;
 import org.poo.main.Transactions.CardTransaction;
@@ -45,9 +46,9 @@ public class Account {
                 SimpleTransaction.TransactionType.CreateAccount));
     }
 
-    /** Creates a new card */
+    /** Creates a new card. */
     public void addNewCard(final boolean isOTP, final int timestamp) {
-        Card card = isOTP ? new OtpCard(this) : new Card();
+        Card card = DatabaseFactory.newCard(isOTP, this);
         cards.put(card.getCardNumber(), card);
         addTransaction(new CreateDestroyCardTransaction(
                 timestamp, card.getCardNumber(), iban, ownerEmail, true));
@@ -76,7 +77,7 @@ public class Account {
     /** */
     public Collection<CardRecord> getCardsRecord() {
         Collection<CardRecord> cardRecords = new ArrayList<>();
-        cards.values().forEach(card -> cardRecords.add(new CardRecord(card)));
+        getCards().forEach(card -> cardRecords.add(new CardRecord(card)));
         return cardRecords;
     }
 

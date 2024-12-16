@@ -1,6 +1,7 @@
 package org.poo.main.BankDatabase;
 
 import org.poo.fileio.UserInput;
+import org.poo.main.BankDatabase.Records.AccountRecord;
 import org.poo.main.Transactions.Transaction;
 
 import java.util.Comparator;
@@ -18,7 +19,7 @@ public class User {
 
     /**
      * Accounts is implemented with a LinkedHashMap instead of a HashMap because
-     *   the output requires the accounts to be shown in the order they were added
+     *   the output requires the accounts to be shown in the order they were added.
      * All operations remain O(1).
      */
     private final Map<String, Account> accounts = new LinkedHashMap<>();
@@ -73,7 +74,7 @@ public class User {
         return null;
     }
 
-    /** Returns the transactions made by a user from any account, sorted by timestamp */
+    /** Returns the transactions made by a user from any account, sorted by timestamp. */
     public Collection<Transaction> getTransactions() {
         ArrayList<Transaction> transactions = new ArrayList<>();
         getAccounts().forEach(account -> transactions.addAll(account.getTransactions()));

@@ -10,9 +10,9 @@ class Graph {
     private final double[][] values;
     private final boolean[] inUse;
 
-    Graph(final int nodes) {
-        this.nodes = nodes;
-        this.inUse = new boolean[nodes];
+    Graph(final int nodeCount) {
+        nodes = nodeCount;
+        inUse = new boolean[nodes];
         values = new double[nodes][nodes];
         for (int i = 0; i < nodes; i++) {
             values[i][i] = 1;

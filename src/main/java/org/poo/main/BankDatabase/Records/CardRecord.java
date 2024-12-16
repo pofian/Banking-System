@@ -1,4 +1,6 @@
-package org.poo.main.BankDatabase;
+package org.poo.main.BankDatabase.Records;
+
+import org.poo.main.BankDatabase.Card;
 
 public record CardRecord(String cardNumber, String status) {
 

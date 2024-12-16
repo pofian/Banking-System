@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.poo.main.BankDatabase.Account;
-import org.poo.main.BankDatabase.UserRecord;
+import org.poo.main.BankDatabase.Records.UserRecord;
 import org.poo.main.Transactions.Commerciant;
 import org.poo.main.Transactions.Transaction;
 
