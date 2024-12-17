@@ -94,6 +94,9 @@ public class Account {
     /** */
     public void subBalance(final double amount) {
         balance -= amount;
+        if (balance < 0) {
+            throw new RuntimeException("Negative balance");
+        }
     }
 
     /** */

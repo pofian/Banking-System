@@ -28,11 +28,11 @@ import java.util.stream.Collectors;
 public class BankInputHandler {
     @Setter
     private Bank bank;
-    private final Output output;
+    private final OutputHandler output;
 
-    public BankInputHandler(final Bank givenBank, final Output givenOutput) {
+    public BankInputHandler(final Bank givenBank) {
         bank = givenBank;
-        output = givenOutput;
+        output = OutputHandler.getInstance();
     }
 
     /** Adds a memento of the users at the current time to output */
@@ -118,12 +118,11 @@ public class BankInputHandler {
             return;
         }
 
-        if (!account.isSavingsAccount()) {
+        try {
+            account.changeInterestRate(commandInput);
+        } catch (UnsupportedOperationException e) {
             output.notSavingsAccount(addOrChange, commandInput.getTimestamp());
-            return;
         }
-
-        account.changeInterestRate(commandInput);
     }
 
     /** Freeze a card if it belongs to an account that has less balance that its set minimum */
@@ -226,7 +225,7 @@ public class BankInputHandler {
             accountPayments.add(newPayment);
         }
 
-        Transaction splitTransaction = new SplitPaymentTransaction(commandInput, amount);
+        Transaction splitTransaction = new SplitPaymentTransaction(commandInput);
         for (AccountPayment newPayment : accountPayments) {
             newPayment.execute();
             newPayment.getSender().addTransaction(splitTransaction);

@@ -4,10 +4,8 @@ import lombok.Getter;
 
 @Getter
 public class SendMoneyTransaction extends Transaction {
-    private final String senderIBAN;
-    private final String receiverIBAN;
-    private final String amount;
-    private final String transferType;
+    private final String senderIBAN, receiverIBAN;
+    private final String amount, transferType;
 
     public SendMoneyTransaction(final int timestamp, final String description,
                                 final String sender,

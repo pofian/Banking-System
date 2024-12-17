@@ -1,45 +1,131 @@
-# Project Assignment POO  - J. POO Morgan - Phase One
 
-![](https://s.yimg.com/ny/api/res/1.2/aN0SfZTtLF5hLNO0wIN3gg--/YXBwaWQ9aGlnaGxhbmRlcjt3PTcwNTtoPTQyNztjZj13ZWJw/https://o.aolcdn.com/hss/storage/midas/b23d8b7f62a50a7b79152996890aa052/204855412/fit.gif)
+# **Bank Account Management System**
 
-#### Assignment Link: [https://ocw.cs.pub.ro/courses/poo-ca-cd/teme/2024/proiect-e1](https://ocw.cs.pub.ro/courses/poo-ca-cd/teme/2024/proiect-e1)
+This project is a **Java-based Bank Account Management System** that models a banking application. It allows operations such as adding users, managing accounts and cards, handling payments, and converting between currencies. The system is modular and implements clean design principles to ensure flexibility and scalability.
 
-## Skel Structure
+---
 
-* src/
-    * checker/ - checker files
-    * fileio/ - contains classes used to read data from the json files
-    * main/
-        * Main - the Main class runs the checker on your implementation. Add the entry point to your implementation in it. Run Main to test your implementation from the IDE or from command line.
-        * Test - run the main method from Test class with the name of the input file from the command line and the result will be written
-          to the out.txt file. Thus, you can compare this result with ref.
-* input/ - contains the tests in JSON format
-* ref/ - contains all reference output for the tests in JSON format
+## **Project Overview**
 
-## Tests
+The system revolves around a **`BankInputHandler`** class that processes user commands and delegates tasks to specific classes and functions.
 
-Tests Basic 1 - 8: Infrastructure \
-Tests Functional 9 - 17: Advanced \
-Tests Flow 18 - 20: Large Input
+Key components of the system include:
 
-1. test01_create - 2p
-2. test02_delete - 2p
-3. test03_one_time_card - 2p
-4. test04_funds - 2p
-5. test05_money_flow - 2p
-6. test06_non_existing - 2p
-7. test07_send_money_part1 - 3p
-8. test08_send_money_part2 - 3p
-9. test09_print_transactions - 3p
-10. test10_errors - 3p
-11. test11_card_status - 5p
-12. test12_continuous_payments - 5p
-13. test13_savings_account - 5p
-14. test14_split_payments - 5p
-15. test15_every_payment - 5p
-16. test16_report - 5p
-17. test17_spendings_report - 5p
-18. test18_large_input_1 - 7p
-19. test19_large_input_2 - 7p
-20. test19_large_input_3 - 7p
+1. **Bank** - Manages users and their accounts.
+2. **User** - Represents a user with one or more accounts.
+3. **Account** - Represents a bank account, managing cards and transactions.
+4. **Card and OtpCard** - Represents payment cards (normal or OTP-based).
+5. **Payment Strategies** - Allows different types of payments with validations.
+6. **CurrencyExchanger** - Converts between different currencies.
+
+---
+
+## **Class Structure and Details**
+
+### **1. Bank**
+
+- **Description**: This class represents the bank and manages users.
+- **Key Fields**:
+    - `LinkedHashMap<String, User> users`
+        - Users are stored using their **email** as a key.
+        - The **LinkedHashMap** ensures O(1) operations for add, get, and remove while maintaining insertion order.
+- **Responsibilities**:
+    - Add, remove, and retrieve users efficiently.
+
+---
+
+### **2. User**
+
+- **Description**: Represents a user in the bank system.
+- **Key Fields**:
+    - `LinkedHashMap<String, Account> accounts`
+        - Accounts are stored using their **ID** or identifier as the key.
+        - The **LinkedHashMap** ensures O(1) operations and preserves the order accounts were added.
+- **Responsibilities**:
+    - Manage user accounts.
+
+---
+
+### **3. Account**
+
+- **Description**: Represents a bank account owned by a user.
+- **Key Fields**:
+    - `LinkedHashMap<String, Card> cards`
+        - Stores cards belonging to the account.
+    - `ArrayList<Transaction> transactions`
+        - Stores all transactions made from the account, even if initiated via a card.
+- **Responsibilities**:
+    - Manage account-related operations like payments, card management, and transactions.
+
+---
+
+### **4. Card**
+
+- **Description**: Represents a standard card.
+- **Responsibilities**:
+    - Execute payments.
+    - Manage card-specific behaviors such as freezing.
+
+#### **OtpCard (Extends Card)**
+
+- **Description**: A one-time payment card that is destroyed after a single use.
+- **Key Fields**:
+    - `private final Account owner`
+        - Holds a reference to the account that owns this OTP card.
+- **Behavior**:
+    - When `executePayment()` is called, the OTP card is destroyed, and a new one is added to the **Account**.
+
+---
+
+## **5. Payment Strategies**
+
+The system implements the **Strategy Design Pattern** for handling different payment methods.
+
+### **PaymentStrategy (Interface)**
+
+- Defines the behavior for executing payments.
+
+### **AccountPayment (Implements PaymentStrategy)**
+
+- **Description**: Executes a payment directly from an account.
+- **Behavior**:
+    - First validates if the payment can be made.
+
+### **SendMoneyAccountPayment (Extends AccountPayment)**
+
+- **Description**: Executes a payment and overrides the `reportSuccessMethod()` to add custom behavior when the payment succeeds.
+
+### **CardPayment (Extends AccountPayment)**
+
+- **Description**: Executes a payment using a card.
+- **Behavior**:
+    - Performs all validations required for the account and verifies if the card is **frozen** before processing the payment.
+
+---
+
+## **6. CurrencyExchanger**
+
+- **Description**: Converts between two currencies using exchange rates.
+- **Implementation**:
+    - Maintains a **Map** of currency rates.
+    - Contains an internal **Graph** class to handle multi-step conversions if no direct rate exists between two currencies.
+
+- **Behavior**:
+    - Allows conversion between two currencies, even when no direct exchange rate is available.
+
+---
+
+## **Main Class: BankInputHandler**
+
+- **Description**: Processes user commands and delegates tasks to the appropriate class and function.
+- **Responsibilities**:
+    - Acts as the central input handler.
+    - Calls the appropriate methods for user management, payments, card management, and currency exchange.
+
+---
+
+
+## **Conclusion**
+
+This Bank Account Management System is designed for flexibility and performance. By using `LinkedHashMap` for O(1) operations and the **Strategy Design Pattern** for payments, the system ensures clean and efficient implementation.
 

@@ -9,12 +9,21 @@ import org.poo.main.Transactions.Commerciant;
 import org.poo.main.Transactions.Transaction;
 
 import java.util.Collection;
+import lombok.Setter;
 
-public class Output {
-    private final ArrayNode output;
+public final class OutputHandler {
+    @Setter
+    private static ArrayNode output;
+    public static final OutputHandler INSTANCE = new OutputHandler();
 
-    public Output(final ArrayNode output) {
-        this.output = output;
+    /** Singleton */
+    private OutputHandler() {
+
+    }
+
+    /** */
+    public static OutputHandler getInstance() {
+        return INSTANCE;
     }
 
     /** Prints bank user in the order they were added */

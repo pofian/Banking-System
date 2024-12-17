@@ -4,9 +4,7 @@ import lombok.Getter;
 
 @Getter
 public class CreateDestroyCardTransaction extends Transaction {
-    private final String account;
-    private final String card;
-    private final String cardHolder;
+    private final String account, card, cardHolder;
 
     public CreateDestroyCardTransaction(final int timestamp, final String cardNumber,
                                         final String iban, final String owner,

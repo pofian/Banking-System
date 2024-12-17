@@ -9,7 +9,7 @@ import org.poo.fileio.CommandInput;
 import org.poo.fileio.ObjectInput;
 import org.poo.main.BankDatabase.Bank;
 import org.poo.main.IO.BankInputHandler;
-import org.poo.main.IO.Output;
+import org.poo.main.IO.OutputHandler;
 
 import java.io.File;
 import java.io.IOException;
@@ -80,10 +80,10 @@ public final class Main {
         ArrayNode output = objectMapper.createArrayNode();
 
         resetRandom();
+        OutputHandler.setOutput(output);
         Bank bank = new Bank(inputData);
-        Output newOutput = new Output(output);
 
-        BankInputHandler bankInputHandler = new BankInputHandler(bank, newOutput);
+        BankInputHandler bankInputHandler = new BankInputHandler(bank);
         for (CommandInput commandInput : inputData.getCommands()) {
             bankInputHandler.runCommand(commandInput);
         }

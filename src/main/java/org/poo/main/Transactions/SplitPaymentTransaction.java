@@ -11,10 +11,10 @@ public class SplitPaymentTransaction extends Transaction {
     private final String currency;
     private final List<String> involvedAccounts;
 
-    public SplitPaymentTransaction(final CommandInput commandInput, final double paymentAmount) {
-        super(commandInput.getTimestamp(), "Split payment of " + String.format(
-                "%.2f ",  commandInput.getAmount()) + commandInput.getCurrency());
-        amount = paymentAmount;
+    public SplitPaymentTransaction(final CommandInput commandInput) {
+        super(commandInput.getTimestamp(), String.format("Split payment of %.2f ",
+                commandInput.getAmount()) + commandInput.getCurrency());
+        amount = commandInput.getAmount() / commandInput.getAccounts().size();
         currency = commandInput.getCurrency();
         involvedAccounts = commandInput.getAccounts();
     }
