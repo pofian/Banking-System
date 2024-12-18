@@ -4,25 +4,25 @@ import org.poo.main.BankDatabase.Account;
 import org.poo.main.Transactions.SimpleTransaction;
 import lombok.Getter;
 
-enum ErrorCode {
-    NoError, InsufficientFunds, MinBalanceSet, CardFrozen
-}
 
 /** Implements the payment between two accounts that might use different currencies. */
 @Getter
-public class AccountPayment implements PaymentStrategy {
+public class AccountPaymentMethod implements PaymentMethod {
     protected final Account sender, receiver;
     protected double amountSent, amountReceived;
-    protected final CurrencyExchanger currencyExchanger;
-    protected final int timestamp;
+    private final CurrencyExchanger currencyExchanger;
     protected final String description;
-    protected StatusCode status = StatusCode.NotValidated;
-    protected ErrorCode validateError = ErrorCode.NoError;
+    protected final int timestamp;
 
-    public AccountPayment(final Account moneySender, final Account moneyReceiver,
-                          final double amount, final String currency,
-                          final CurrencyExchanger givenCurrencyExchanger,
-                          final String paymentDescription,  final int paymentTimestamp) {
+    private enum AccountError {
+        NoError, InsufficientFunds, MinBalanceSet
+    }
+    private AccountError validateError = AccountError.NoError;
+
+    public AccountPaymentMethod(final Account moneySender, final Account moneyReceiver,
+                                final double amount, final String currency,
+                                final CurrencyExchanger givenCurrencyExchanger,
+                                final String paymentDescription, final int paymentTimestamp) {
         sender = moneySender;
         receiver = moneyReceiver;
         currencyExchanger = givenCurrencyExchanger;
@@ -41,53 +41,30 @@ public class AccountPayment implements PaymentStrategy {
         }
     }
 
-    /** Final for additional security. */
-    @Override
-    public final void validate() {
-        if (status != StatusCode.NotValidated) {
-            throw new RuntimeException("Already validated!");
-        }
-        validateMethod();
-        if (validateError == ErrorCode.NoError) {
-            status = StatusCode.CanExecute;
-        } else {
-            status = StatusCode.CanNotExecute;
-        }
-    }
-
-    /**
-     * Transfers the amount from one account to another.
-     * Final for additional security.
-     */
-    @Override
-    public final void execute() {
-        if (status != StatusCode.CanExecute) {
-            throw new RuntimeException("Can't execute this payment");
-        }
-        executeMethod();
-        reportSuccessMethod();
-        status = StatusCode.Executed;
-    }
-
     /** */
-    protected void validateMethod() {
-        validateAccount();
+    @Override
+    public boolean validateMethod() {
+        return validateAccount();
     }
 
     /**
      * In order for an account to make a payment, it must have enough money
      *      and also after the payment not remain with less money than its set minimum.
      */
-    protected void validateAccount() {
+    protected final boolean validateAccount() {
         if (sender.getBalance() < amountSent) {
-            validateError = ErrorCode.InsufficientFunds;
+            validateError = AccountError.InsufficientFunds;
+            return false;
         } else if (sender.getBalance() - amountSent < sender.getMinBalance()) {
-            validateError = ErrorCode.MinBalanceSet;
+            validateError = AccountError.MinBalanceSet;
+            return false;
         }
+        return true;
     }
 
     /** */
-    protected void executeMethod() {
+    @Override
+    public void executeMethod() {
         executeAccount();
     }
 
@@ -100,7 +77,8 @@ public class AccountPayment implements PaymentStrategy {
     }
 
     /** */
-    protected void reportSuccessMethod() {
+    @Override
+    public void reportSuccessMethod() {
 
     }
 
@@ -119,26 +97,9 @@ public class AccountPayment implements PaymentStrategy {
     }
 
     /** This type of payment can only fail because of the sender. */
-    protected boolean reportErrorMethod() {
+    @Override
+    public boolean reportErrorMethod() {
         return reportAccountError();
-    }
-
-    /** Final for additional security. */
-    public final void reportErrorOrExecute() {
-        if (reportErrorMethod()) {
-            return;
-        }
-
-        if (validateError != ErrorCode.NoError) {
-            throw new RuntimeException("Error not handled " + validateError);
-        }
-
-        execute();
-    }
-
-    /** */
-    public final boolean canExecute() {
-        return status == StatusCode.CanExecute;
     }
 
 }

@@ -77,29 +77,43 @@ Key components of the system include:
 
 ---
 
-## **5. Payment Strategies**
+## **5. Payments**
 
-The system implements the **Strategy Design Pattern** for handling different payment methods.
+### **Payment**
+
+This class is responsible for validating and executing any possible
+payment strategy implemented by the user. It keeps an internal state of the
+transaction (not validated, validate and can be executed,
+validated and cannot be executed, already executed) and ensures no
+unusual behavior can appear (ex: executing or validating a payment multiple
+times.)
 
 ### **PaymentStrategy (Interface)**
 
-- Defines the behavior for executing payments.
+The system implements the **Strategy Design Pattern** for handling different payment methods.
+- Each class that implements this must have a method for validating, executing and reporting the status.
 
-### **AccountPayment (Implements PaymentStrategy)**
+### **AccountPaymentMethod (Implements PaymentStrategy)**
 
-- **Description**: Executes a payment directly from an account.
-- **Behavior**:
-    - First validates if the payment can be made.
+- **Description**: Executes a payment directly from an account to another.
 
-### **SendMoneyAccountPayment (Extends AccountPayment)**
+### **SendMoneyPaymentPayment (Extends AccountPayment)**
 
 - **Description**: Executes a payment and overrides the `reportSuccessMethod()` to add custom behavior when the payment succeeds.
 
-### **CardPayment (Extends AccountPayment)**
+### **CardPaymentMethod (Extends AccountPayment)**
 
 - **Description**: Executes a payment using a card.
 - **Behavior**:
     - Performs all validations required for the account and verifies if the card is **frozen** before processing the payment.
+
+### **SplitPaymentMethod (Implements PaymentStrategy)**
+
+- **Description**: Splits an amount between multiple accounts
+  - **Behavior**:
+  - Creates a new Payment using AccountPaymentMethod for each account
+  - Stores these payments and validates each one of them.
+  - Runs the payments only after all were validated.
 
 ---
 
@@ -122,7 +136,11 @@ The system implements the **Strategy Design Pattern** for handling different pay
     - Acts as the central input handler.
     - Calls the appropriate methods for user management, payments, card management, and currency exchange.
 
+## **OutputHandler**
+- **Description**: Is a singleton class, responsible for adding data in the output ArrayNode
+
 ---
+
 
 
 ## **Conclusion**

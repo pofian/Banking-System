@@ -7,6 +7,7 @@ import org.poo.main.BankDatabase.Records.UserRecord;
 import org.poo.main.Payments.CurrencyExchanger;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.LinkedHashMap;
@@ -50,6 +51,19 @@ public class Bank {
             }
         }
         return null;
+    }
+
+    /** @return An ArrayList without null Account instance */
+    public List<Account> getAccountsFromIBAN(final List<String> accountsIBAN) {
+        List<Account> accounts = new ArrayList<>();
+        for (String accountIBAN : accountsIBAN) {
+            Account account = getAccountFromIBAN(accountIBAN);
+            if (account == null) {
+                throw new RuntimeException("Invalid IBAN: " + accountIBAN);
+            }
+            accounts.add(account);
+        }
+        return accounts;
     }
 
     /** */

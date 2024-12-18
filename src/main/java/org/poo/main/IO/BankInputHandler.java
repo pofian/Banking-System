@@ -7,16 +7,15 @@ import org.poo.main.BankDatabase.User;
 import org.poo.main.BankDatabase.Account;
 import org.poo.main.BankDatabase.Card;
 import org.poo.main.BankDatabase.DatabaseFactory;
-import org.poo.main.Payments.AccountPayment;
-import org.poo.main.Payments.CardPayment;
-import org.poo.main.Payments.SendMoneyAccountPayment;
+import org.poo.main.Payments.Payment;
+import org.poo.main.Payments.SplitPaymentMethod;
+import org.poo.main.Payments.AccountPaymentMethod;
+import org.poo.main.Payments.SendMoneyPaymentMethod;
+import org.poo.main.Payments.CardPaymentMethod;
 import org.poo.main.Transactions.Commerciant;
 import org.poo.main.Transactions.Transaction;
 import org.poo.main.Transactions.SimpleTransaction;
 import org.poo.main.Transactions.SimpleTransaction.TransactionType;
-import org.poo.main.Transactions.CardTransaction;
-import org.poo.main.Transactions.SplitPaymentTransaction;
-import org.poo.main.Transactions.SplitPaymentFailedTransaction;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -180,18 +179,16 @@ public class BankInputHandler {
         List<Commerciant> commerciants;
         transactions = new ArrayList<>();
 
-        for (CardTransaction transaction : account.getCardTransactions()) {
-            if (goodTransaction.test(transaction)) {
-                transactions.add(transaction);
-                String commerciant = transaction.getCommerciant();
-                Double amount = commerciantsMap.get(commerciant);
-                if (amount != null) {
-                    commerciantsMap.replace(commerciant, amount + transaction.getAmount());
-                } else {
-                    commerciantsMap.put(commerciant, transaction.getAmount());
-                }
+        account.getCardTransactions().stream().filter(goodTransaction).forEach(transaction -> {
+            transactions.add(transaction);
+            String commerciant = transaction.getCommerciant();
+            Double amount = commerciantsMap.get(commerciant);
+            if (amount != null) {
+                commerciantsMap.replace(commerciant, amount + transaction.getAmount());
+            } else {
+                commerciantsMap.put(commerciant, transaction.getAmount());
             }
-        }
+        });
 
         commerciants = new ArrayList<>();
         for (Map.Entry<String, Double> commerciant : commerciantsMap.entrySet()) {
@@ -201,48 +198,15 @@ public class BankInputHandler {
         output.report(transactions, account, commerciants, true, commandInput.getTimestamp());
     }
 
-    /**
-     * Make all accounts pay the split amount if they have enough funds.
-     * If not, return the IBAN of the one that doesn't have enough money
-     */
-    private String accountThatCannotPay(final CommandInput commandInput) {
-        List<AccountPayment> accountPayments = new ArrayList<>();
-        double amount = commandInput.getAmount() / commandInput.getAccounts().size();
-
-        for (String iban : commandInput.getAccounts().reversed()) {
-            Account account = bank.getAccountFromIBAN(iban);
-            if (account == null) {
-                throw new RuntimeException("Non existent account");
-            }
-
-            AccountPayment newPayment = new AccountPayment(account, null, amount,
-                    commandInput.getCurrency(), bank.getCurrencyExchanger(),
-                    commandInput.getDescription(), commandInput.getTimestamp());
-            newPayment.validate();
-            if (!newPayment.canExecute()) {
-                return iban;
-            }
-            accountPayments.add(newPayment);
-        }
-
-        Transaction splitTransaction = new SplitPaymentTransaction(commandInput);
-        for (AccountPayment newPayment : accountPayments) {
-            newPayment.execute();
-            newPayment.getSender().addTransaction(splitTransaction);
-        }
-        return null;
-    }
-
-    /** Checks if all account can pay. If not, send every one a split failed transaction */
+    /** Splits a sum evenly and reports an error if necessary. */
     private void splitPayment(final CommandInput commandInput) {
-        String moneylessAccount = accountThatCannotPay(commandInput);
-        if (moneylessAccount != null) {
-            Transaction splitFailedTransaction =
-                    new SplitPaymentFailedTransaction(commandInput, moneylessAccount);
-            for (String iban : commandInput.getAccounts()) {
-                bank.getAccountFromIBAN(iban).addTransaction(splitFailedTransaction);
-            }
-        }
+        // This method also checks whether all account exist or not.
+        List<Account> accounts = bank.getAccountsFromIBAN(commandInput.getAccounts());
+        SplitPaymentMethod paymentMethod = new SplitPaymentMethod(commandInput.getAccounts(),
+                accounts, commandInput.getAmount(), commandInput.getCurrency(),
+                bank.getCurrencyExchanger(), commandInput.getDescription(),
+                commandInput.getTimestamp());
+        new Payment(paymentMethod).validateAndReportOrExecute();
     }
 
     /**
@@ -259,12 +223,11 @@ public class BankInputHandler {
         if (accountReceiver == null) {
             return;
         }
-
-        AccountPayment payment = new SendMoneyAccountPayment(accountSender, accountReceiver,
-                commandInput.getAmount(), accountSender.getCurrency(), bank.getCurrencyExchanger(),
+        AccountPaymentMethod accountPaymentMethod = new SendMoneyPaymentMethod(
+                accountSender, accountReceiver, commandInput.getAmount(),
+                accountSender.getCurrency(), bank.getCurrencyExchanger(),
                 commandInput.getDescription(), commandInput.getTimestamp());
-        payment.validate();
-        payment.reportErrorOrExecute();
+        new Payment(accountPaymentMethod).validateAndReportOrExecute();
     }
 
     /** Payment with a card */
@@ -287,11 +250,11 @@ public class BankInputHandler {
             return;
         }
 
-        CardPayment payment = new CardPayment(card, account, null, commandInput.getCommerciant(),
-                commandInput.getAmount(), commandInput.getCurrency(),
-                bank.getCurrencyExchanger(), commandInput.getTimestamp());
-        payment.validate();
-        payment.reportErrorOrExecute();
+        CardPaymentMethod cardPayment = new CardPaymentMethod(card, account, null,
+                commandInput.getCommerciant(), commandInput.getAmount(),
+                commandInput.getCurrency(), bank.getCurrencyExchanger(),
+                commandInput.getTimestamp());
+        new Payment(cardPayment).validateAndReportOrExecute();
     }
 
     /** Adds a new card to an account */

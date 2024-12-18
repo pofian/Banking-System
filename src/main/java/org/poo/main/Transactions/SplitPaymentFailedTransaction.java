@@ -1,14 +1,17 @@
 package org.poo.main.Transactions;
 
 import lombok.Getter;
-import org.poo.fileio.CommandInput;
+
+import java.util.List;
 
 @Getter
 public class SplitPaymentFailedTransaction extends SplitPaymentTransaction {
     private final String error;
 
-    public SplitPaymentFailedTransaction(final CommandInput commandInput, final String iban) {
-        super(commandInput);
+    public SplitPaymentFailedTransaction(final double totalAmount, final String splitCurrency,
+                                         final List<String> accountsIBAN, final String iban,
+                                         final int timestamp) {
+        super(totalAmount, splitCurrency, accountsIBAN, timestamp);
         error = "Account " + iban + " has insufficient funds for a split payment.";
     }
 }

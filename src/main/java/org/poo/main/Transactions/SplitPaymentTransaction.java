@@ -1,7 +1,6 @@
 package org.poo.main.Transactions;
 
 import lombok.Getter;
-import org.poo.fileio.CommandInput;
 
 import java.util.List;
 
@@ -11,11 +10,11 @@ public class SplitPaymentTransaction extends Transaction {
     private final String currency;
     private final List<String> involvedAccounts;
 
-    public SplitPaymentTransaction(final CommandInput commandInput) {
-        super(commandInput.getTimestamp(), String.format("Split payment of %.2f ",
-                commandInput.getAmount()) + commandInput.getCurrency());
-        amount = commandInput.getAmount() / commandInput.getAccounts().size();
-        currency = commandInput.getCurrency();
-        involvedAccounts = commandInput.getAccounts();
+    public SplitPaymentTransaction(final double totalAmount, final String splitCurrency,
+                                   final List<String> accountsIBAN, final int timestamp) {
+        super(timestamp, String.format("Split payment of %.2f ", totalAmount) + splitCurrency);
+        amount = totalAmount / accountsIBAN.size();
+        currency = splitCurrency;
+        involvedAccounts = accountsIBAN;
     }
 }

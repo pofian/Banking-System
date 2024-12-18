@@ -10,7 +10,6 @@ import org.poo.main.Transactions.CardTransaction;
 import org.poo.main.Transactions.CreateDestroyCardTransaction;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.LinkedHashMap;
@@ -27,8 +26,8 @@ public class Account {
     // Note: This is added only because the addCard and deleteCard transactions
     //      require printing the owner of the account for whatever reason.
     private final String ownerEmail;
-    private final List<Transaction> transactions = new ArrayList<>();
-    private final List<CardTransaction> cardTransactions = new ArrayList<>();
+    private final Collection<Transaction> transactions = new ArrayList<>();
+    private final Collection<CardTransaction> cardTransactions = new ArrayList<>();
 
     /**
      * Cards is implemented with a LinkedHashMap instead of a HashMap because
