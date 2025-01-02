@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.poo</groupId>
-    <artifactId>j-poo-morgan-phase-one</artifactId>
+    <artifactId>j-poo-morgan-phase-two</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 

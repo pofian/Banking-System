@@ -9,4 +9,6 @@ public final class UserInput {
     private String firstName;
     private String lastName;
     private String email;
+    private String birthDate;
+    private String occupation;
 }
