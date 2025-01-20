@@ -1,149 +1,176 @@
+# **Bank Management System**
 
-# **Bank Account Management System**
-
-This project is a **Java-based Bank Account Management System** that models a banking application. It allows operations such as adding users, managing accounts and cards, handling payments, and converting between currencies. The system is modular and implements clean design principles to ensure flexibility and scalability.
+This project is a **Java-based Bank Management System** designed to simulate a banking application.
+It supports a range of operations, including adding users, managing accounts and cards, processing payments, and currency conversion.
+The system is modular and follows clean design principles, ensuring flexibility and scalability.
 
 ---
 
 ## **Project Overview**
 
-The system revolves around a **`BankInputHandler`** class that processes user commands and delegates tasks to specific classes and functions.
+The system centers around a **`BankInputHandler`** class, which processes user commands and delegates tasks to various classes and functions.
 
 Key components of the system include:
 
-1. **Bank** - Manages users and their accounts.
-2. **User** - Represents a user with one or more accounts.
-3. **Account** - Represents a bank account, managing cards and transactions.
-4. **Card and OtpCard** - Represents payment cards (normal or OTP-based).
-5. **Payment Strategies** - Allows different types of payments with validations.
-6. **CurrencyExchanger** - Converts between different currencies.
+1. **Bank** - Manages users, accounts, and transactions.
+2. **Banker** - Facilitates user and account searches, and manages the state of pending payments.
+3. **User** - Represents a user with one or more accounts, each linked to an **AccountSpendingHistory** for payment tracking.
+4. **Account** - Represents a bank account, handling cards and transactions.
+5. **Card and OtpCard** - Represents normal and OTP-based payment cards.
+6. **Payment Strategies** - Implements various payment methods with validation.
+7. **CurrencyExchanger** - Handles conversion between different currencies.
 
 ---
 
-## **Class Structure and Details**
+### **Key Interfaces**
 
-### **1. Bank**
+#### **MoneyUser**
 
-- **Description**: This class represents the bank and manages users.
+- **Description**: Ensures that all money-related entities have a valid IBAN and name, supporting transaction logging.
+
+#### **MoneySender** (Extends `MoneyUser`)
+
+- **Method**:
+    - `payTo(MoneyReceiver receiver, MoneySum amount)`:
+        - Sends money to a specified receiver.
+
+#### **MoneyReceiver** (Extends `MoneyUser`)
+
+- **Method**:
+    - `addSum(MoneySum amount)`:
+        - Adds the received amount to the balance.
+
+---
+
+## **Main Classes: Structure and Details**
+
+### **Bank**
+
+- **Description**: Represents the bank and manages user accounts.
 - **Key Fields**:
     - `LinkedHashMap<String, User> users`
         - Users are stored using their **email** as a key.
-        - The **LinkedHashMap** ensures O(1) operations for add, get, and remove while maintaining insertion order.
+        - **LinkedHashMap** ensures efficient operations (O(1)) and preserves insertion order.
 - **Responsibilities**:
     - Add, remove, and retrieve users efficiently.
+    - Retrieve commerciants based on their name on the IBAN of the account associated with them.
 
 ---
 
-### **2. User**
+### **Banker**
 
-- **Description**: Represents a user in the bank system.
+- **Description**: Facilitates searching users, accounts, and cards in the bank by various identifiers.
+- **Key Features**:
+    - Perform efficient searches for users, accounts, commerciants and cards in the Bank.
+    - Track and manage split payment statuses.
+
+---
+
+### **User**
+
+- **Description**: Represents a user within the bank system.
 - **Key Fields**:
     - `LinkedHashMap<String, Account> accounts`
-        - Accounts are stored using their **ID** or identifier as the key.
-        - The **LinkedHashMap** ensures O(1) operations and preserves the order accounts were added.
+        - Accounts are stored using their **IBAN** or identifier as the key.
+        - **LinkedHashMap** ensures efficient operations and maintains account insertion order.
 - **Responsibilities**:
-    - Manage user accounts.
+    - Manage and operate user accounts.
 
 ---
 
-### **3. Account**
+### **Account**
 
-- **Description**: Represents a bank account owned by a user.
-- **Key Fields**:
-    - `LinkedHashMap<String, Card> cards`
-        - Stores cards belonging to the account.
-    - `ArrayList<Transaction> transactions`
-        - Stores all transactions made from the account, even if initiated via a card.
-- **Responsibilities**:
-    - Manage account-related operations like payments, card management, and transactions.
+- **Description**: Represents a bank account associated with a user. It implements both `MoneySender` and `MoneyReceiver`.
+- **Key Features**:
+    - Implements `payTo()` from `MoneySender` for transferring money to `MoneyReceiver` objects.
+    - Handles commissions and cashback for transactions.
+    - Provides access control methods for managers and employees in `BusinessAccount`.
+    - Reports payments for business analysis.
+
+#### **Account Types**:
+
+1. **ClassicAccount**:
+    - Standard account for personal banking.
+
+2. **SavingsAccount**:
+    - Account for saving funds with potential interest accumulation.
+
+3. **BusinessAccount**:
+    - Supports multiple users (e.g., managers and employees), allowing them to add funds, make payments, and create cards.
+    - Overrides access control to allow non-owners (managers) to perform operations.
+    - Provides business reporting for transaction analysis.
 
 ---
 
-### **4. Card**
-
-- **Description**: Represents a standard card.
-- **Responsibilities**:
-    - Execute payments.
-    - Manage card-specific behaviors such as freezing.
-
-#### **OtpCard (Extends Card)**
-
-- **Description**: A one-time payment card that is destroyed after a single use.
-- **Key Fields**:
-    - `private final Account owner`
-        - Holds a reference to the account that owns this OTP card.
+### **Payments**
+- **Description**: Represents the invoker for executing payment operations.
 - **Behavior**:
-    - When `executePayment()` is called, the OTP card is destroyed, and a new one is added to the **Account**.
+    - Validates and executes payments only if sufficient funds are available.
 
----
+#### **Payment Methods**
 
-## **5. Payments**
+The system includes several types of payment methods:
 
-### **Payment**
+1. **SendMoneyPaymentMethod**:
+    - Extends `AccountPaymentMethod`.
 
-This class is responsible for validating and executing any possible
-payment strategy implemented by the user. It keeps an internal state of the
-transaction (not validated, validate and can be executed,
-validated and cannot be executed, already executed) and ensures no
-unusual behavior can appear (ex: executing or validating a payment multiple
-times.)
+2. **CardPaymentMethod**:
+    - An abstract class, extended by `CashWithdrawalPaymentMethod` and `PayOnlinePaymentMethod`.
 
-### **PaymentStrategy (Interface)**
+3. **CustomSplitPaymentMethod** and **EqualSplitPaymentMethod**:
+    - Extends the abstract `SplitPaymentMethod` to divide payments between multiple accounts.
 
-The system implements the **Strategy Design Pattern** for handling different payment methods.
-- Each class that implements this must have a method for validating, executing and reporting the status.
+#### **SplitPaymentMethod**
 
-### **AccountPaymentMethod (Implements PaymentStrategy)**
-
-- **Description**: Executes a payment directly from an account to another.
-
-### **SendMoneyPaymentPayment (Extends AccountPayment)**
-
-- **Description**: Executes a payment and overrides the `reportSuccessMethod()` to add custom behavior when the payment succeeds.
-
-### **CardPaymentMethod (Extends AccountPayment)**
-
-- **Description**: Executes a payment using a card.
+- **Description**: Handles splitting payments between multiple accounts.
 - **Behavior**:
-    - Performs all validations required for the account and verifies if the card is **frozen** before processing the payment.
-
-### **SplitPaymentMethod (Implements PaymentStrategy)**
-
-- **Description**: Splits an amount between multiple accounts
-  - **Behavior**:
-  - Creates a new Payment using AccountPaymentMethod for each account
-  - Stores these payments and validates each one of them.
-  - Runs the payments only after all were validated.
+    - Validates and executes individual payments for each account.
 
 ---
 
-## **6. CurrencyExchanger**
+### *MoneySum*
+- **Description**: Represents a monetary sum with a `convert()` method for currency conversion.
+- **Behavior**:
+    - `convert()` avoids redundant calculations and operations when converting between the same currencies.
 
-- **Description**: Converts between two currencies using exchange rates.
+---
+
+### **Commerciant**
+
+- **Description**: Implements `MoneyReceiver` and represents merchants who receive payments.
+- **Key Features**:
+    - Maintains a static `Map<Account, AccountSpendingHistory>` to track spending history.
+    - Offers cashback or rewards based on transaction history:
+        1. **SpendingThresholdCommerciant**: Provides cashback based on total spending.
+        2. **NrOfTransactionsCommerciant**: Rewards accounts based on transaction volume.
+
+---
+
+### **CurrencyExchanger**
+
+- **Description**: Converts between currencies using stored exchange rates.
 - **Implementation**:
-    - Maintains a **Map** of currency rates.
-    - Contains an internal **Graph** class to handle multi-step conversions if no direct rate exists between two currencies.
-
-- **Behavior**:
-    - Allows conversion between two currencies, even when no direct exchange rate is available.
+    - Maintains a **Map** of currency exchange rates.
+    - Uses an internal **Graph** class for multistep conversions when direct rates are unavailable.
 
 ---
 
-## **Main Class: BankInputHandler**
+## **Design Patterns**
 
-- **Description**: Processes user commands and delegates tasks to the appropriate class and function.
-- **Responsibilities**:
-    - Acts as the central input handler.
-    - Calls the appropriate methods for user management, payments, card management, and currency exchange.
+Several design patterns have been employed to enhance flexibility, reuse code, enforce specific implementations, and ensure ease of modification:
 
-## **OutputHandler**
-- **Description**: Is a singleton class, responsible for adding data in the output ArrayNode
+- **Facade** - Used in the `Banker` class to simplify interactions with the `Bank`, serving as the only class that accesses methods in `Bank`.
+- **Factory** - Found in `DatabaseFactory`, which creates instances of classes that extend abstract classes based on input.
+- **Singleton** - Implemented in `OutputHandler`, `CurrencyExchanger`, `UnrecordedMoneyUser`, and the four plan types.
+- **Proxy** - Applied in `CurrencyExchanger`, where the exchange graph is constructed only when necessary.
+- **Flyweight** - In `MoneySum`, reusing the same object when the same currency conversion is requested to optimize memory usage.
+- **Command Pattern** - In the `Payment` class, which invokes methods on a `PaymentMethod` interface, ensuring that payments are only executed after validation.
+- **Observer** - In `BusinessAccount`, each `UserReport` object acts as an observer, notified when changes occur, such as adding balance or making payments.
+- **Strategy** - Implements different behaviors for cashback and payment additions, with specific strategies for accounts and commerciants.
+- **Visitor** - The `getCashback` method on `Commerciants` uses an `Account` parameter that acts as a visitor, applying specific behavior to different account types.
 
 ---
-
-
 
 ## **Conclusion**
 
-This Bank Account Management System is designed for flexibility and performance. By using `LinkedHashMap` for O(1) operations and the **Strategy Design Pattern** for payments, the system ensures clean and efficient implementation.
-
+This Bank Account Management System is designed for flexibility and efficiency. Its modular architecture, advanced account management features, and payment strategies offer a powerful platform for managing banking operations.
