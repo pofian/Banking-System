@@ -28,7 +28,7 @@ public final class Payment {
 
     /** */
     public void execute() {
-        if (!canExecute()) {
+        if (cannotExecute()) {
             throw new RuntimeException("Can't execute this payment");
         }
 
@@ -43,7 +43,7 @@ public final class Payment {
             return;
         }
 
-        if (!canExecute()) {
+        if (cannotExecute()) {
             throw new RuntimeException("Error not handled");
         }
         execute();
@@ -56,7 +56,13 @@ public final class Payment {
     }
 
     /** */
-    public boolean canExecute() {
-        return status == StatusCode.CanExecute;
+    public boolean cannotExecute() {
+        return status != StatusCode.CanExecute;
     }
+
+    /** */
+    public boolean hasExecuted() {
+        return status == StatusCode.Executed;
+    }
+
 }

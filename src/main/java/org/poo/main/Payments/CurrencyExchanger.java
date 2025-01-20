@@ -1,5 +1,6 @@
 package org.poo.main.Payments;
 
+import lombok.Getter;
 import org.poo.fileio.ExchangeInput;
 
 import java.util.Map;
@@ -9,9 +10,12 @@ public class CurrencyExchanger {
     private final ExchangeInput[] exchangeRates;
     private final Map<String, Integer> currencyMap = new HashMap<>();
     private Graph graph = null;
+    @Getter
+    private static CurrencyExchanger globalExchanger = null;
 
     public CurrencyExchanger(final ExchangeInput[] givenExchangeRates) {
         exchangeRates = givenExchangeRates;
+        globalExchanger = this;
     }
 
     /** Calculates the exchange rate between 2 currencies. */

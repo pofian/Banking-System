@@ -11,7 +11,10 @@ public final class SimpleTransaction extends Transaction {
         InsufficientFounds("Insufficient funds"),
         CreateAccount("New account created"),
         FreezeCard("You have reached the minimum amount of funds, the card will be frozen"),
-        CardFrozen("The card is frozen");
+        CardFrozen("The card is frozen"),
+        UserUnderage("You don't have the minimum age required."),
+        NoClassicAccount("You do not have a classic account."),
+        NotSavings("Savings withdrawal");
 
         private final String transaction;
         TransactionType(final String s) {
@@ -19,7 +22,12 @@ public final class SimpleTransaction extends Transaction {
         }
     }
 
+
     public SimpleTransaction(final int timestamp, final TransactionType transactionType) {
         super(timestamp, transactionType.getTransaction());
+    }
+
+    public SimpleTransaction(final int timestamp, final String transaction) {
+        super(timestamp, transaction);
     }
 }

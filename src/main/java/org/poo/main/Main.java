@@ -2,6 +2,7 @@ package org.poo.main;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.poo.checker.Checker;
 import org.poo.checker.CheckerConstants;
@@ -10,6 +11,7 @@ import org.poo.fileio.ObjectInput;
 import org.poo.main.BankDatabase.Bank;
 import org.poo.main.IO.BankInputHandler;
 import org.poo.main.IO.OutputHandler;
+import org.poo.main.Payments.CurrencyExchanger;
 
 import java.io.File;
 import java.io.IOException;
@@ -77,11 +79,14 @@ public final class Main {
         File file = new File(CheckerConstants.TESTS_PATH + filePath1);
         ObjectInput inputData = objectMapper.readValue(file, ObjectInput.class);
 
+        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+
         ArrayNode output = objectMapper.createArrayNode();
 
         resetRandom();
         OutputHandler.setOutput(output);
         Bank bank = new Bank(inputData);
+        new CurrencyExchanger(inputData.getExchangeRates());
 
         BankInputHandler bankInputHandler = new BankInputHandler(bank);
         for (CommandInput commandInput : inputData.getCommands()) {

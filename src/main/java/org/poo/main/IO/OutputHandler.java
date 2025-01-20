@@ -3,9 +3,12 @@ package org.poo.main.IO;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.poo.main.BankDatabase.Account;
-import org.poo.main.BankDatabase.Records.UserRecord;
-import org.poo.main.Transactions.Commerciant;
+import org.poo.main.BankDatabase.Accounts.Account;
+import org.poo.main.BankDatabase.Accounts.BusinessAccount.BusinessAccount;
+import org.poo.main.BankDatabase.Accounts.BusinessAccount.BusinessCommerciantReport;
+import org.poo.main.BankDatabase.Accounts.BusinessAccount.BusinessTransactionReport;
+import org.poo.main.Records.UserRecord;
+import org.poo.main.Records.Commerciant;
 import org.poo.main.Transactions.Transaction;
 
 import java.util.Collection;
@@ -51,20 +54,6 @@ public final class OutputHandler {
         output.addPOJO(node);
     }
 
-    /** Couldn't find the account that owns the card or the card */
-    public void cardNotFoundPayOnline(final int timestamp) {
-        ObjectNode node = JsonNodeFactory.instance.objectNode();
-        node.put("command", "payOnline");
-
-        ObjectNode newNode = JsonNodeFactory.instance.objectNode();
-        newNode.put("description", "Card not found");
-        newNode.put("timestamp", timestamp);
-        node.putPOJO("output", newNode);
-
-        node.put("timestamp", timestamp);
-        output.addPOJO(node);
-    }
-
     /** Prints all the transactions made by a user, ordered by their timestamp  */
     public void printTransactions(final Collection<Transaction> transactions, final int timestamp) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
@@ -74,13 +63,13 @@ public final class OutputHandler {
         output.addPOJO(node);
     }
 
-    /** Couldn't find the card */
-    public void cardNotFoundCheckStatus(final int timestamp) {
+    /** Used in general for error messages like "Card not found". */
+    public void simpleOutput(final String command, final String description, final int timestamp) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
-        node.put("command", "checkCardStatus");
+        node.put("command", command);
 
         ObjectNode newNode = JsonNodeFactory.instance.objectNode();
-        newNode.put("description", "Card not found");
+        newNode.put("description", description);
         newNode.put("timestamp", timestamp);
         node.putPOJO("output", newNode);
 
@@ -102,6 +91,37 @@ public final class OutputHandler {
         newNode.putPOJO("transactions", transactions);
         if (isSpendingReport) {
             newNode.putPOJO("commerciants", commerciants);
+        }
+        node.putPOJO("output", newNode);
+
+        node.put("timestamp", timestamp);
+        output.addPOJO(node);
+    }
+
+    /** Creates a business account report, based on its type (transaction or commerciant). */
+    public void businessReport(final BusinessTransactionReport transactionReport,
+                               final BusinessCommerciantReport commerciantReport,
+                               final int timestamp) {
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.put("command", "businessReport");
+
+        ObjectNode newNode = JsonNodeFactory.instance.objectNode();
+        BusinessAccount account = (transactionReport != null)
+                ? transactionReport.getAccount() : commerciantReport.getAccount();
+        newNode.put("balance", account.getBalance());
+        newNode.put("currency", account.getCurrency());
+        newNode.put("IBAN", account.getIBAN());
+        newNode.put("deposit limit", account.getDepositLimit());
+        newNode.put("spending limit", account.getSpendingLimit());
+        if (transactionReport != null) {
+            newNode.putPOJO("employees", transactionReport.getEmployeesReport());
+            newNode.putPOJO("managers", transactionReport.getManagersReport());
+            newNode.put("total deposited", transactionReport.getTotalDeposited());
+            newNode.put("total spent", transactionReport.getTotalSpent());
+            newNode.put("statistics type", "transaction");
+        } else {
+            newNode.put("statistics type", "commerciant");
+            newNode.putPOJO("commerciants", commerciantReport.getCommerciants().values());
         }
         node.putPOJO("output", newNode);
 
@@ -141,4 +161,5 @@ public final class OutputHandler {
         node.put("timestamp", timestamp);
         output.addPOJO(node);
     }
+
 }

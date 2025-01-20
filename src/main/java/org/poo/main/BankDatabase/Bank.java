@@ -1,30 +1,36 @@
 package org.poo.main.BankDatabase;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.poo.fileio.CommerciantInput;
 import org.poo.fileio.ObjectInput;
 import org.poo.fileio.UserInput;
-import org.poo.main.BankDatabase.Records.UserRecord;
-import org.poo.main.Payments.CurrencyExchanger;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 import lombok.Getter;
+import org.poo.main.BankDatabase.Accounts.Account;
+import org.poo.main.Commerciants.Commerciant;
+
+import static org.poo.main.BankDatabase.DatabaseFactory.newCommerciant;
+
 
 @Getter
 public class Bank {
     /// Using a LinkedHashMap since it is required to print the users in the order they were added
     private final Map<String, User> users = new LinkedHashMap<>();
-    private final CurrencyExchanger currencyExchanger;
-
+    private final Map<String, Commerciant> commerciantsNames = new HashMap<>();
+    private final Map<String, Commerciant> commerciantsAccounts = new HashMap<>();
     public Bank(final ObjectInput inputData) {
         for (UserInput userInput : inputData.getUsers()) {
             addUser(new User(userInput));
         }
-        currencyExchanger = new CurrencyExchanger(inputData.getExchangeRates());
+        for (CommerciantInput commerciantInput : inputData.getCommerciants()) {
+            Commerciant commerciant = newCommerciant(commerciantInput);
+            commerciantsNames.put(commerciant.getName(), commerciant);
+            commerciantsAccounts.put(commerciant.getIBAN(), commerciant);
+        }
     }
 
     /** */
@@ -53,36 +59,14 @@ public class Bank {
         return null;
     }
 
-    /** @return An ArrayList without null Account instance */
-    public List<Account> getAccountsFromIBAN(final List<String> accountsIBAN) {
-        List<Account> accounts = new ArrayList<>();
-        for (String accountIBAN : accountsIBAN) {
-            Account account = getAccountFromIBAN(accountIBAN);
-            if (account == null) {
-                throw new RuntimeException("Invalid IBAN: " + accountIBAN);
-            }
-            accounts.add(account);
-        }
-        return accounts;
+    /** */
+    public Commerciant getCommerciantFromName(final String commerciantName) {
+        return commerciantsNames.get(commerciantName);
     }
 
     /** */
-    public Account getAccountThatOwnsCard(final String cardNumber) {
-        for (User user : users.values()) {
-            for (Account account : user.getAccounts()) {
-                if (account.getCard(cardNumber) != null) {
-                    return account;
-                }
-            }
-        }
-        return null;
+    public Commerciant getCommerciantFromIBAN(final String iban) {
+        return commerciantsAccounts.get(iban);
     }
 
-    /** Returns all users present in the bank at a certain time */
-    @JsonIgnore
-    public Collection<UserRecord> getUsersRecord() {
-        Collection<UserRecord> usersRecord = new ArrayList<>();
-        getUsers().forEach(user -> usersRecord.add(new UserRecord(user)));
-        return usersRecord;
-    }
 }

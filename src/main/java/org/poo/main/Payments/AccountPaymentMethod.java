@@ -1,6 +1,8 @@
 package org.poo.main.Payments;
 
-import org.poo.main.BankDatabase.Account;
+import org.poo.main.BankDatabase.Accounts.Account;
+import org.poo.main.Commerciants.MoneyReceiver;
+import org.poo.main.Records.MoneySum;
 import org.poo.main.Transactions.SimpleTransaction;
 import lombok.Getter;
 
@@ -8,10 +10,10 @@ import lombok.Getter;
 /** Implements the payment between two accounts that might use different currencies. */
 @Getter
 public class AccountPaymentMethod implements PaymentMethod {
-    protected final Account sender, receiver;
-    protected double amountSent, amountReceived;
-    private final CurrencyExchanger currencyExchanger;
-    protected final String description;
+    protected final Account sender;
+    protected final MoneyReceiver receiver;
+    private final boolean chargeCommission;
+    protected final MoneySum moneySum;
     protected final int timestamp;
 
     private enum AccountError {
@@ -19,26 +21,14 @@ public class AccountPaymentMethod implements PaymentMethod {
     }
     private AccountError validateError = AccountError.NoError;
 
-    public AccountPaymentMethod(final Account moneySender, final Account moneyReceiver,
-                                final double amount, final String currency,
-                                final CurrencyExchanger givenCurrencyExchanger,
-                                final String paymentDescription, final int paymentTimestamp) {
+    public AccountPaymentMethod(final Account moneySender, final boolean commission,
+                                final MoneyReceiver moneyReceiver, final MoneySum sum,
+                                final int paymentTimestamp) {
         sender = moneySender;
+        chargeCommission = commission;
         receiver = moneyReceiver;
-        currencyExchanger = givenCurrencyExchanger;
         timestamp = paymentTimestamp;
-        description = paymentDescription;
-        calculateAmounts(amount, currency);
-    }
-
-    /** Receiver can be null */
-    private void calculateAmounts(final double amount, final String currency) {
-        amountSent = amount * currencyExchanger.convert(currency, sender.getCurrency());
-        if (receiver != null) {
-            amountReceived = amount * currencyExchanger.convert(currency, receiver.getCurrency());
-        } else {
-            amountReceived = 0;
-        }
+        moneySum = sum.convert(sender.getCurrency());
     }
 
     /** */
@@ -52,10 +42,10 @@ public class AccountPaymentMethod implements PaymentMethod {
      *      and also after the payment not remain with less money than its set minimum.
      */
     protected final boolean validateAccount() {
-        if (sender.getBalance() < amountSent) {
+        if (!sender.canPaySum(moneySum, chargeCommission)) {
             validateError = AccountError.InsufficientFunds;
             return false;
-        } else if (sender.getBalance() - amountSent < sender.getMinBalance()) {
+        } else if (!sender.canPayAmountMinBalance(moneySum, chargeCommission)) {
             validateError = AccountError.MinBalanceSet;
             return false;
         }
@@ -70,10 +60,7 @@ public class AccountPaymentMethod implements PaymentMethod {
 
     /** Transfers the funds from the sender to the receiver. */
     protected void executeAccount() {
-        sender.subBalance(amountSent);
-        if (receiver != null) {
-            receiver.addBalance(amountReceived);
-        }
+        sender.payTo(moneySum, chargeCommission, receiver);
     }
 
     /** */
